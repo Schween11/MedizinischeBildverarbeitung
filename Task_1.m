@@ -22,6 +22,7 @@ unten = Va_normal(midSliceX,:,:); % "von der Seite", fixes X
 unten2D = squeeze(axial (unten)); 
 seitlich2D = squeeze(sagittal (seitlich));
 frontal2D = squeeze(koronar ());
+
 figure;
 
 subplot(1,3,1);
