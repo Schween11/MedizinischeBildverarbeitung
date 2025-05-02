@@ -49,5 +49,5 @@ subplot(1,3,3);
 imshow(seitlich2D);
 title('Sagittal');
 
-% 3D- Visualisierung
+% 3D- Visualisierunge
 %volshow (Image_normal);
