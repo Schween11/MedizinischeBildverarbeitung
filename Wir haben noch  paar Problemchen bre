@@ -1,4 +1,14 @@
 Was ist mit Datensatz verwenden gemeint in Excel (Y)?
+alles nutzen was geht
+
 Pixel-Dimensionen --> nicht alle Bilder sind gleich große Matrix + selbst wenn Matrix gleich groß wäre sind einzelne Voxel nicht gleich groß, wird glaube ich im nächsten Schritt wichtig
+
+--> habe ich gerendert mit funktion:
+"Deine Matrix-Indices sind in Voxel-Einheiten.
+imref2d(size(A), dx, dy) übersetzt dann Spalten → dx und Zeilen → dy in Millimeter, sodass das Bild weder gestreckt noch gestaucht wird."
+
 Was haben "Niere maximal" bei koronaler Schicht (x)" und "gewählte axiale Schichten (z)" Werte zu bedeuten --> wo müssen schnitte gesetzt werden? Sowohl bei der Maske als auch beim CT-Scan 
+Ich hab jetzt die schnitte von x und y beide auf die spalte niere maximal gesetzt, das liefert die besten Ergebnisse aber noch nicht überall perfekt
+
 Wie legt man passende Maske über das Bild? 
+chatgpt macht möglich
