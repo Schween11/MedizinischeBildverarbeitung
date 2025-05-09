@@ -1,7 +1,7 @@
 %% Darstellung der drei orthogonalen Schnitte + 2. Axial-Slice
 clear
 %% 0) Case-ID einlesen
-case_id  = 203;                   
+case_id  = 63;                   
 case_str = sprintf('%05d', case_id);
 
 %% 1) Excel-Tabelle einlesen und Indizes + Pixel-Dimensionen holen
