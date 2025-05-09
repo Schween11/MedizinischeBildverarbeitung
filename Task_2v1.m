@@ -1,7 +1,7 @@
 %% Darstellung der drei orthogonalen Schnitte + 2. Axial-Slice
 clear
 %% 0) Case-ID einlesen
-case_id  = 71;                   
+case_id  = 203;                   
 case_str = sprintf('%05d', case_id);
 
 %% 1) Excel-Tabelle einlesen und Indizes + Pixel-Dimensionen holen
@@ -19,13 +19,18 @@ seg_path  = fullfile(case_path,'segmentation.nii.gz'); % Path zur Maske
 im_vol   = niftiread(im_path);    % Einlesen des CT-Scans (nxnxn double Matrix)
 seg_vol  = niftiread(seg_path) > 0;   % Binärmaske
 
-im_fov   = im_vol(:, :, tbl{row,10}:tbl{row,11});
-seg_fov  = seg_vol(:, :,  tbl{row,10}:tbl{row,11});
+midZ = round(size(im_vol, 1) / 2);  % Mitte des Volumens in Z
 
-midZ = round(size(im_vol, 3) / 2);  % Mitte des Volumens in Z
+z_fov = tbl{row,10}:tbl{row,11};
+z_fov_r = tbl{row,10}:midZ;
+z_fov_l =midZ:tbl{row,11};
 
-im_fov_l = im_vol(:, :,tbl{row,10}:midZ);  im_fov_r = im_vol(:, :,midZ:tbl{row,11}); 
-seg_fov_l = seg_vol(:, :,tbl{row,10}:midZ);  seg_fov_r = seg_vol(:, :, midZ:tbl{row,11}); 
+im_fov   = im_vol(z_fov, :, :);
+seg_fov  = seg_vol(z_fov, :, :);
+
+
+im_fov_r = im_vol(:, :,z_fov_r);  im_fov_l = im_vol(:, :,z_fov_l); 
+seg_fov_r = seg_vol(:, :,z_fov_r);  seg_fov_l = seg_vol(:, :, z_fov_l); 
 
 %% 3) Intensitäten normalisieren auf [0,1] und Pixelgrößen
 mn    = min(im_fov,[],'all');
@@ -51,8 +56,8 @@ midZ = round(nz / 2);
 slice_cor_l = slice_cor(:, 1:midZ);
 mask_cor_l  = mask_cor(:, 1:midZ);
 
-slice_cor_r = slice_cor(:, midZ+1:end);
-mask_cor_r  = mask_cor(:, midZ+1:end);
+slice_cor_r = slice_cor(:, midZ:end);
+mask_cor_r  = mask_cor(:, midZ:end);
 
 
 %% 5) Maximalwerte innerhalb der Niere berechnen
