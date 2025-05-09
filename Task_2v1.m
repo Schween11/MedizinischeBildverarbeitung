@@ -92,3 +92,5 @@ hR = imshow(cat(3, ones(size(mask_cor_r)), zeros(size(mask_cor_r)), zeros(size(m
 set(hR, 'AlphaData', 0.3 * double(mask_cor_r));
 title('\bfRechte Hälfte (Mitte bis Z-max)');
 axis off;
+
+%Hallo
