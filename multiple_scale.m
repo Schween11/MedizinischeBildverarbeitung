@@ -75,3 +75,5 @@ title('Canny (Bilateral)');
 subplot(2,3,6);
 imshow(Gmag_bilat_comb, []);
 title('Gradients (Bilateral)');
+
+%branch
