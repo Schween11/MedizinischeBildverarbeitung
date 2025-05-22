@@ -1,7 +1,7 @@
 %% Darstellung der drei orthogonalen Schnitte + 2. Axial-Slice
 clear
 %% 0) Case-ID einlesen
-case_id  = 63;                   
+case_id  = 158;                   
 case_str = sprintf('%05d', case_id);
 
 %% 1) Excel-Tabelle einlesen und Indizes + Pixel-Dimensionen holen
@@ -99,4 +99,5 @@ hR = imshow(redOverlayR, R_cor_r);
 set(hR, 'AlphaData', 0.3 * double(mask_cor_r));
 title('\bfLinke Hälfte (Mitte bis Z-max)');
 axis off;
+
 

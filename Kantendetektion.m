@@ -77,11 +77,7 @@ BW_orig  = edge(I_orig, 'Canny');
 BW_gauss = edge(I_gauss, 'Canny');
 BW_med   = edge(I_med, 'Canny');
 BW_bilat = edge(I_bilat, 'Canny');
-BW_diff  = edge(I_diff, 'Canny', low_thr, high_thr);
 
-low = mean(I_diff(:)) * 0.5;
-high = mean(I_diff(:)) * 1.5;
-BW_diff = edge(I_diff, 'Canny', low, high);
 
 % Schritt 6: Fuzzy binarisieren
 threshold = graythresh(edge_fuzzy_bil); %T hreshold zur Binarisierung verwenden
@@ -96,8 +92,8 @@ fuzzy_diff_thin = bwmorph(BW_fuzzy_dif, 'thin', Inf);
 % Canny Thresholds angepasst an Matrix Werte
 low = mean(I_diff(:)) * 0.5;
 high = mean(I_diff(:)) * 1.5;
-BW_diff = edge(I_diff, 'Canny', low, high);
-
+BW_diff = edge(I_diff, 'Canny',  0.2, 0.4);
+BW_diff = bwareaopen(BW_diff, 100);
 %% Vergleich anzeigen
 figure;
 subplot(2,2,1); imshow(BW_bilat); title('Bilateral + Canny');
@@ -105,11 +101,11 @@ subplot(2,2,2); imshow(BW_diff); title('Diffusion + Canny');
 subplot(2,2,3); imshow(fuzzy_bil_thin); title('Bilateral + Fuzzy');
 subplot(2,2,4); imshow(fuzzy_diff_thin); title('Diffusion + Fuzzy');
 
-target = BW_diff_r;
+target = fuzzy_diff_thin;
 shapes_path = 'shapes';
-kidney_path = fullfile(shapes_path,'KidneyCoronal.png');
+kidney_path = fullfile(shapes_path,'KidneyCoronal_mod.png');
 reference = imread(kidney_path);       % z. B. uint8 RGB
 reference = rgb2gray(reference);   % Konvertiere zu Graustufen
-reference = imbinarize(reference);     % Jetzt 2D logical
-
+reference = edge(reference, 'Canny');
 imshow(reference)
+

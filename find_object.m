@@ -22,7 +22,7 @@ score: maximum score of the best match
 %}
 
 % --- Initialization ------------------------------------------------------
-lowest_score = 0.3; % define lowest score
+lowest_score = 0; % define lowest score
 score = lowest_score; % initialize score as lowest_score
 YBest = 0;
 XBest = 0;
