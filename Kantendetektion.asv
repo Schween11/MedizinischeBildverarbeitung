@@ -92,12 +92,11 @@ BW_fuzzy_dif = imbinarize(edge_fuzzy_dif, threshold_dif);
 fuzzy_bil_thin = bwmorph(BW_fuzzy_bil, 'thin', Inf);
 fuzzy_diff_thin = bwmorph(BW_fuzzy_dif, 'thin', Inf);
 
-% Canny Thresholds angepasst an Matrix Werte
+% Vergleich anzeigen
 low = mean(I_diff(:)) * 0.5;
 high = mean(I_diff(:)) * 1.5;
 BW_diff = edge(I_diff, 'Canny', low, high);
 
-%% Vergleich anzeigen
 figure;
 subplot(2,2,1); imshow(BW_bilat); title('Bilateral + Canny');
 subplot(2,2,2); imshow(BW_diff); title('Diffusion + Canny'); 
