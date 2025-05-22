@@ -1,77 +1,68 @@
-% Ursprungsbild (Graustufen, normiert)
-I = im2double(slice_cor);
+clear;
 
-% Multi-Scale Parameter
-iterations = [5, 15, 30];
-num_scales = length(iterations);
+case_ids = [63, 66, 71, 91, 96];
+tbl = readtable('patients_25.xlsx', 'VariableNamingRule', 'preserve');
+bilder = cell(2, 5);  % 2 Bilder pro Fall: manuell (fixe Schwellen), auto (dynamisch)
+titel = strings(2, 5);
 
-% Init Arrays
-Gmag_diffuse = zeros([size(I), num_scales]);
-Gmag_bilat = zeros([size(I), num_scales]);
-canny_diffuse = false([size(I), num_scales]);
-canny_bilat = false([size(I), num_scales]);
+sigmas = [1, 2, 3];  % Multiscale: verschiedene Glättungsstufen
 
-% Multi-Scale Verarbeitung
-for k = 1:num_scales
-    % --- Anisotrope Diffusion ---
-    I_diff = imdiffusefilt(I, ...
-        'NumberOfIterations', iterations(k), ...
-        'GradientThreshold', 10);
-    [Gdiff, ~] = imgradient(I_diff);
-    Gmag_diffuse(:,:,k) = mat2gray(Gdiff);
-    canny_diffuse(:,:,k) = edge(I_diff, 'Canny');
+for i = 1:5
+    id = case_ids(i);
+    case_str = sprintf('%05d', id);
+    row = tbl{:,1} == id;
 
-    % --- Bilateral Filter ---
-    I_bilat = imbilatfilt(I, 0.1, 2);  % σR, σS ggf. anpassen
-    I_bilat = imbilatfilt(I_bilat, 0.1, 2);  % zwei Stufen für Vergleichbarkeit
-    [Gbilat, ~] = imgradient(I_bilat);
-    Gmag_bilat(:,:,k) = mat2gray(Gbilat);
-    canny_bilat(:,:,k) = edge(I_bilat, 'Canny');
+    Xslice = tbl{row, 9};
+    zrange = tbl{row,10}:tbl{row,11};
+
+    % Bild einlesen und normieren
+    case_path = fullfile('allcasesunzipped', ['case_' case_str]);
+    im = niftiread(fullfile(case_path, 'imaging.nii.gz'));
+    im = im(zrange, :, :);
+    im = (im - min(im(:))) / (max(im(:)) - min(im(:)));
+
+    % Sagittaler Schnitt
+    slice_cor = squeeze(im(:, Xslice, :));
+    nz = size(slice_cor, 2);
+    midZ = round(nz / 2);
+    location = extractBefore(string(tbl{row,12}), ',');
+    I = slice_cor(:, midZ+1:end);
+    if location == "links"
+        I = slice_cor(:, 1:midZ);
+    end
+
+    % --- Multiscale-Canny: manuell (fixe Schwellen) ---
+    edges_manual = false(size(I));
+    for s = sigmas
+        I_blur = imgaussfilt(I, s);
+        E = edge(I_blur, 'Canny', 0.2, 0.45);
+        edges_manual = edges_manual | E;
+    end
+    edges_manual = bwareaopen(edges_manual, 100);
+    bilder{1, i} = edges_manual;
+    titel(1, i) = "Case " + id + " - manuell";
+
+    % --- Multiscale-Canny: automatisch (dynamische Schwellen) ---
+    edges_auto = false(size(I));
+    for s = sigmas
+        I_blur = imgaussfilt(I, s);
+        low = mean(I_blur(:)) * 0.4;
+        high = mean(I_blur(:)) * 1.2;
+        E = edge(I_blur, 'Canny', low, high);
+        edges_auto = edges_auto | E;
+    end
+    edges_auto = bwareaopen(edges_auto, 20);
+    bilder{2, i} = edges_auto;
+    titel(2, i) = "Case " + id + " - auto";
 end
 
-% --- Kombination der Skalen ---
-Gmag_diff_comb = max(Gmag_diffuse, [], 3);
-Gmag_bilat_comb = max(Gmag_bilat, [], 3);
-canny_diff_comb = any(canny_diffuse, 3);
-canny_bilat_comb = any(canny_bilat, 3);
-
-% --- Fuzzy-System auf beide Varianten ---
-fuzzy_diff = reshape(evalfis(fis, Gmag_diff_comb(:)), size(Gmag_diff_comb));
-fuzzy_bilat = reshape(evalfis(fis, Gmag_bilat_comb(:)), size(Gmag_bilat_comb));
-
-% --- Nachbearbeitung ---
-fuzzy_diff_bin = imbinarize(fuzzy_diff, 0.3);
-fuzzy_diff_thin = bwmorph(fuzzy_diff_bin, 'thin', Inf);
-
-fuzzy_bilat_bin = imbinarize(fuzzy_bilat, 0.3);
-fuzzy_bilat_thin = bwmorph(fuzzy_bilat_bin, 'thin', Inf);
-
-canny_diff_thin = bwmorph(canny_diff_comb, 'thin', Inf);
-canny_bilat_thin = bwmorph(canny_bilat_comb, 'thin', Inf);
-
-% --- Visualisierung ---
-figure('Name', 'Fuzzy vs Canny – Diffusion & Bilateral');
-
-subplot(2,3,1);
-imshow(fuzzy_diff_thin);
-title('Fuzzy (Diffusion)');
-
-subplot(2,3,2);
-imshow(canny_diff_thin);
-title('Canny (Diffusion)');
-
-subplot(2,3,3);
-imshow(Gmag_diff_comb, []);
-title('Gradients (Diffusion)');
-
-subplot(2,3,4);
-imshow(fuzzy_bilat_thin);
-title('Fuzzy (Bilateral)');
-
-subplot(2,3,5);
-imshow(canny_bilat_thin);
-title('Canny (Bilateral)');
-
-subplot(2,3,6);
-imshow(Gmag_bilat_comb, []);
-title('Gradients (Bilateral)');
+% Darstellung
+figure;
+for i = 1:5
+    for j = 1:2
+        subplot(2, 5, (j-1)*5 + i);
+        imshow(bilder{j, i});
+        title(titel(j, i), 'FontSize', 8);
+    end
+end
+sgtitle('Multiscale-Canny-Kantendetektion (manuell vs. automatisch)', 'FontWeight', 'bold');
