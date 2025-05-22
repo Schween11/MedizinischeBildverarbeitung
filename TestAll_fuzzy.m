@@ -1,6 +1,11 @@
 
 
-case_ids = [63, 66, 71, 91, 96];
+case_ids = [142
+146
+155
+158
+159
+];
 tbl = readtable('patients_25.xlsx', 'VariableNamingRule', 'preserve');
 bilder = cell(1, 5);
 titel = strings(1, 5);
@@ -8,13 +13,13 @@ titel = strings(1, 5);
 % Fuzzy-Inferenzsystem vorbereiten
 fis = sugfis('Name','FuzzyEdge');
 fis = addInput(fis, [0 1], 'Name', 'Gradient');
-fis = addMF(fis, 'Gradient', 'gaussmf', [0.2 0.0], 'Name', 'low');
-fis = addMF(fis, 'Gradient', 'gaussmf', [0.2 0.4], 'Name', 'medium');
-fis = addMF(fis, 'Gradient', 'gaussmf', [0.2 0.8], 'Name', 'high');
+fis = addMF(fis, 'Gradient', 'gaussmf', [0.15 0.0], 'Name', 'low');
+fis = addMF(fis, 'Gradient', 'gaussmf', [0.15 0.3], 'Name', 'medium');
+fis = addMF(fis, 'Gradient', 'gaussmf', [0.15 0.5], 'Name', 'high');
 fis = addOutput(fis, [0 1], 'Name', 'EdgeStrength');
 fis = addMF(fis, 'EdgeStrength', 'constant', 0.1, 'Name', 'weak');
-fis = addMF(fis, 'EdgeStrength', 'constant', 0.2, 'Name', 'medium');
-fis = addMF(fis, 'EdgeStrength', 'constant', 1.0, 'Name', 'strong');
+fis = addMF(fis, 'EdgeStrength', 'constant', 0.5, 'Name', 'medium');
+fis = addMF(fis, 'EdgeStrength', 'constant', 1, 'Name', 'strong');
 rules = [
 "If Gradient is low Then EdgeStrength is weak"
 "If Gradient is medium Then EdgeStrength is medium"
@@ -47,14 +52,15 @@ for i = 1:5
     end
 
     % Glättung + Gradient
-    I_diff = imdiffusefilt(I, 'NumberOfIterations', 30, 'GradientThreshold', 10);
+    I_diff = imdiffusefilt(I, 'NumberOfIterations', 20, 'GradientThreshold', 5);
     G = mat2gray(imgradient(I_diff));
 
     % Fuzzy auswerten
     out = evalfis(fis, G(:));
     edge = reshape(out, size(I));
-    edge_bin = imbinarize(edge, 0.4);
-    edge_thin = bwmorph(edge_bin, 'thin', Inf);
+    edge_bin = imbinarize(edge, 0.3);
+    edge_clean = bwareaopen(edge_bin, 50);
+    edge_thin = bwmorph(edge_clean, 'thin', Inf);
 
     bilder{i} = edge_thin;
     titel(i) = "Case " + id;

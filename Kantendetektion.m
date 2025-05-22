@@ -4,7 +4,8 @@ first_word = extractBefore(location_str, ',');
 
 if first_word == "rechts"
     I_orig = slice_cor_r;
-else I_orig = slice_cor_l;
+else 
+    I_orig = slice_cor_l;
 end
 
 %% Vorverarbeitungsschritte 

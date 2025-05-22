@@ -1,16 +1,15 @@
 clear;
 
-case_ids = [63
-66
-71
-91
-96
-
+case_ids = [142
+146
+155
+158
+159
 
 ];
 tbl = readtable('patients_25.xlsx', 'VariableNamingRule', 'preserve');
-bilder = cell(1, 5);
-titel = strings(1, 5);
+bilder = cell(2, 5);  % 3 Bilder pro Fall: manuell, low, high
+titel = strings(2, 5);
 
 for i = 1:5
     id = case_ids(i);
@@ -35,24 +34,29 @@ for i = 1:5
         I = slice_cor(:, 1:midZ);
     end
 
+    I_smooth = imdiffusefilt(slice_cor, 'NumberOfIterations', 30, 'GradientThreshold', 10);
 
-    I_smooth = imdiffusefilt(I, 'NumberOfIterations', 30, 'GradientThreshold', 10);
+    % Manuell gewählte Thresholds
+    BW_manual = edge(I_smooth, 'Canny', 0.13, 0.45);
+    BW_manual = bwareaopen(BW_manual, 50);
+    bilder{1, i} = BW_manual;
+    titel(1, i) = "Case " + id + " - manuell";
 
-    low = mean(I_smooth(:)) * 0.5;
-   high = mean(I_smooth(:)) * 1.5;
-   BW = edge(I_smooth, 'Canny', low, high)
-
-    % Nachbearbeitung
-    BW_clean = bwareaopen(BW, 50); %Entfernt Pixelinseln
-
-    bilder{i} = BW_clean;
-    titel(i) = "Case " + id;
+    % Automatische Thresholds 
+    low = mean(I_smooth(:)) * 0.3;
+    high = mean(I_smooth(:)) * 1.0;
+    BW_auto_low = edge(I_smooth, 'Canny', low, high);
+    BW_auto_low = bwareaopen(BW_auto_low, 50);
+    bilder{2, i} = BW_auto_low;
+    titel(2, i) = "Case " + id + " - auto";
 end
-
 figure;
-for k = 1:5
-    subplot(1,5,k);
-    imshow(bilder{k});
-    title(titel(k), 'FontSize', 9);
+for i = 1:5
+    for j = 1:2
+        subplot(2,5,(j-1)*5 + i);
+        imshow(bilder{j,i});
+        title(titel(j,i), 'FontSize', 8);
+    end
 end
-sgtitle('Canny-Kantendetektion (5 Fälle)', 'FontWeight', 'bold');
+sgtitle('Canny-Kantendetektion (manuell vs. automatisch)', 'FontWeight', 'bold');
+
