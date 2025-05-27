@@ -1,11 +1,15 @@
+function result = EdgeDetection(case_id);
+case_id = 63;
+data = loadCaseData(case_id);
+
 %% Auswahl der pathologische Seite 
-location_str = string(tbl{row,12});
+location_str = string(data.tbl{data.row,12});
 first_word = extractBefore(location_str, ',');
 
 if first_word == "rechts"
-    I_orig = slice_cor_r;
+    I_orig = data.slice_cor_r;
 else 
-    I_orig = slice_cor_l;
+    I_orig = data.slice_cor_l;
 end
 
 %% Vorverarbeitungsschritte 
@@ -94,18 +98,14 @@ low = mean(I_diff(:)) * 0.5;
 high = mean(I_diff(:)) * 1.5;
 BW_diff = edge(I_diff, 'Canny',  0.2, 0.4);
 BW_diff = bwareaopen(BW_diff, 100);
-%% Vergleich anzeigen
-figure;
-subplot(2,2,1); imshow(BW_bilat); title('Bilateral + Canny');
-subplot(2,2,2); imshow(BW_diff); title('Diffusion + Canny'); 
-subplot(2,2,3); imshow(fuzzy_bil_thin); title('Bilateral + Fuzzy');
-subplot(2,2,4); imshow(fuzzy_diff_thin); title('Diffusion + Fuzzy');
 
-target = fuzzy_diff_thin;
-shapes_path = 'shapes';
-kidney_path = fullfile(shapes_path,'KidneyCoronal_mod.png');
-reference = imread(kidney_path);       % z. B. uint8 RGB
-reference = rgb2gray(reference);   % Konvertiere zu Graustufen
-reference = edge(reference, 'Canny');
-imshow(reference)
+% Ausgabe als Struktur
+result = struct();
+result.BW_bilat = BW_bilat;
+result.BW_diff = BW_diff;
+result.fuzzy_bil_thin = fuzzy_bil_thin;
+result.fuzzy_diff_thin = fuzzy_diff_thin;
+result.I_orig = I_orig;
+result.case_id = case_id;
 
+end

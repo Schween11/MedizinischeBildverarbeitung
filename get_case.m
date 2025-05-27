@@ -1,7 +1,7 @@
+%% Funktion, die Task1 und 2 bearbeitet, jedoch nicht plottet (Task 1 und 2 seperat aufrufen)
+
+function get_case(case_id)
 %% Darstellung der drei orthogonalen Schnitte + 2. Axial-Slice
-clear
-%% 0) Case-ID einlesen
-case_id  = 158;                   
 case_str = sprintf('%05d', case_id);
 
 %% 1) Excel-Tabelle einlesen und Indizes + Pixel-Dimensionen holen
@@ -59,45 +59,4 @@ mask_cor_l  = mask_cor(:, 1:midZ);
 slice_cor_r = slice_cor(:, midZ:end);
 mask_cor_r  = mask_cor(:, midZ:end);
 
-
-%% 5) Maximalwerte innerhalb der Niere berechnen
-max_cor = max(slice_cor(mask_cor), [], 'all');
-
-%% Darstellung mit physikalischem Seitenverhältnis (komplett, inkl. Halbierungen)
-figure('Name', ['Case ' case_str ' - Coronar vollständig & halbiert'], ...
-       'Units', 'normalized', 'Position', [0.1 0.1 0.9 0.8]);
-colormap gray;
-
-% slice_cor: rows = Y (pixY), cols = Z (pixZ)
-R_cor    = imref2d(size(slice_cor),    pixZ, pixY);
-R_cor_l  = imref2d(size(slice_cor_l),  pixZ, pixY);
-R_cor_r  = imref2d(size(slice_cor_r),  pixZ, pixY);
-
-% === (a) Kompletter Coronar-Schnitt ===
-subplot(2,2,1);
-imshow(slice_cor, R_cor, [], 'InitialMagnification', 'fit'); hold on;
-redOverlay = cat(3, ones(size(mask_cor)), zeros(size(mask_cor)), zeros(size(mask_cor)));
-h1 = imshow(redOverlay, R_cor);
-set(h1, 'AlphaData', 0.3 * double(mask_cor));
-title(sprintf('\\bfCoronar (X = %d), max = %.3f', Xslice, max_cor));
-axis off;
-
-% === (b) Linke Hälfte ===
-subplot(2,2,3);
-imshow(slice_cor_l, R_cor_l, [], 'InitialMagnification','fit'); hold on;
-redOverlayL = cat(3, ones(size(mask_cor_l)), zeros(size(mask_cor_l)), zeros(size(mask_cor_l)));
-hL = imshow(redOverlayL, R_cor_l);
-set(hL, 'AlphaData', 0.3 * double(mask_cor_l));
-title('\bfRechte Hälfte (Z-min bis Mitte)');
-axis off;
-
-% === (c) Rechte Hälfte ===
-subplot(2,2,4);
-imshow(slice_cor_r, R_cor_r, [], 'InitialMagnification','fit'); hold on;
-redOverlayR = cat(3, ones(size(mask_cor_r)), zeros(size(mask_cor_r)), zeros(size(mask_cor_r)));
-hR = imshow(redOverlayR, R_cor_r);
-set(hR, 'AlphaData', 0.3 * double(mask_cor_r));
-title('\bfLinke Hälfte (Mitte bis Z-max)');
-axis off;
-
-
+end
