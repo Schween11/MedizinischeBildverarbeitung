@@ -34,11 +34,11 @@ for i = 1:5
         I = slice_cor(:, 1:midZ);
     end
 
-    I_smooth = imdiffusefilt(slice_cor, 'NumberOfIterations', 30, 'GradientThreshold', 10);
+    I_smooth = imdiffusefilt(slice_cor, 'NumberOfIterations', 25, 'GradientThreshold', 5);
 
     % Manuell gewählte Thresholds
-    BW_manual = edge(I_smooth, 'Canny', 0.13, 0.45);
-    BW_manual = bwareaopen(BW_manual, 50);
+    BW_manual = edge(I_smooth, 'Canny', 0.2, 0.4);
+    BW_manual = bwareaopen(BW_manual, 120);
     bilder{1, i} = BW_manual;
     titel(1, i) = "Case " + id + " - manuell";
 

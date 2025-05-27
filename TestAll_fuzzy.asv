@@ -13,8 +13,8 @@ titel = strings(1, 5);
 fis = sugfis('Name','FuzzyEdge');
 fis = addInput(fis, [0 1], 'Name', 'Gradient');
 fis = addMF(fis, 'Gradient', 'gaussmf', [0.15 0.0], 'Name', 'low');
-fis = addMF(fis, 'Gradient', 'gaussmf', [0.15 0.2], 'Name', 'medium');
-fis = addMF(fis, 'Gradient', 'gaussmf', [0.15 0.4], 'Name', 'high');
+fis = addMF(fis, 'Gradient', 'gaussmf', [0.15 0.3], 'Name', 'medium');
+fis = addMF(fis, 'Gradient', 'gaussmf', [0.15 0.5], 'Name', 'high');
 fis = addOutput(fis, [0 1], 'Name', 'EdgeStrength');
 fis = addMF(fis, 'EdgeStrength', 'constant', 0.1, 'Name', 'weak');
 fis = addMF(fis, 'EdgeStrength', 'constant', 0.5, 'Name', 'medium');
@@ -57,9 +57,8 @@ for i = 1:5
     % Fuzzy auswerten
     out = evalfis(fis, G(:));
     edge = reshape(out, size(I));
-      threshold = graythresh(edge);
-    edge_bin = imbinarize(edge, threshold);
-    edge_clean = bwareaopen(edge_bin, 0);
+    edge_bin = imbinarize(edge, 0.3);
+    edge_clean = bwareaopen(edge_bin, 300);
     edge_thin = bwmorph(edge_clean, 'thin', Inf);
 
     bilder{i} = edge_thin;

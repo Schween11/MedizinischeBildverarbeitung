@@ -1,5 +1,4 @@
 function result = EdgeDetection(case_id);
-case_id = 63;
 data = loadCaseData(case_id);
 
 %% Auswahl der pathologische Seite 
