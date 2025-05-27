@@ -1,8 +1,5 @@
 function [target_marked,reference_marked,YBest,XBest,ang,scale,score]= find_object(target, reference)
 %{
-IMPORTANT:
-This is a template script and has to be completed by you!
-Please rename it to the function name "find_object.m"
 
 DESCRIPTION:
 Find reference image (edge image) in target image (edge image)
