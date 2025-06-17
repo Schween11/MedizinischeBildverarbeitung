@@ -1,7 +1,7 @@
 function canny_edge_detection(case_id)
 
 %% Case Auswahl mit get_case Funktion 
-get_case(case_id)
+loadCaseData(case_id)
 tbl = readtable('patients_25.xlsx','VariableNamingRule','preserve');
 row     = tbl{:,1} == case_id; % erste Spalte (Case-Indizes)
 
