@@ -53,11 +53,11 @@ Dx=-NMinX;
 Dy=-NMinY; 
 
 % create canvas for rotated image
-mat = logical(zeros(round(NSizeY+1),round(NSizeX+1)));
+mat = false(round(NSizeY+1),round(NSizeX+1));
 
 %--- rotate image ---------------------------------------------------------
 [y,x]=find(I);
-[n,tt]=size(x);
+[n,~]=size(x);
 for f=1:n %scan all points on image
     p1=[y(f)-CntY x(f)-CntX]*Rot+[Dy+1 Dx+1];
     mat(round(p1(1)),round(p1(2)))=1;% mark rotated point

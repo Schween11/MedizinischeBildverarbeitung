@@ -16,8 +16,8 @@ end
 % Parameter für Canny und Diffusionsfilter
 nmb_it = 30;
 grd_thr = 10;
-low_thr = 0.15;
-high_thr = 0.45;
+low_thr = 0.2;
+high_thr = 0.4;
 
 
 % Schritt 1: Glättung (linear, Gaußfilter)
@@ -80,7 +80,10 @@ BW_orig  = edge(I_orig, 'Canny');
 BW_gauss = edge(I_gauss, 'Canny');
 BW_med   = edge(I_med, 'Canny');
 BW_bilat = edge(I_bilat, 'Canny');
-
+circle_edge = edge(data.circle, 'Canny');
+oval_edge = edge(data.oval, 'Canny');
+kidney_edge = edge(data.kidney, 'Canny');
+kidney_mod_edge = edge(data.kidney_mod, 'Canny');
 
 % Schritt 6: Fuzzy binarisieren
 threshold = graythresh(edge_fuzzy_bil); %T hreshold zur Binarisierung verwenden
@@ -95,7 +98,7 @@ fuzzy_diff_thin = bwmorph(BW_fuzzy_dif, 'thin', Inf);
 % Canny Thresholds angepasst an Matrix Werte
 low = mean(I_diff(:)) * 0.5;
 high = mean(I_diff(:)) * 1.5;
-BW_diff = edge(I_diff, 'Canny',  0.2, 0.4);
+BW_diff = edge(I_diff, 'Canny',  low_thr, high_thr);
 BW_diff = bwareaopen(BW_diff, 100);
 
 % Ausgabe als Struktur
@@ -106,5 +109,8 @@ result.fuzzy_bil_thin = fuzzy_bil_thin;
 result.fuzzy_diff_thin = fuzzy_diff_thin;
 result.I_orig = I_orig;
 result.case_id = case_id;
-
+result.kidney_edge = kidney_edge;
+result.kidney_mod_edge = kidney_mod_edge;
+result.circle_edge = circle_edge;
+result.oval_edge = oval_edge;
 end

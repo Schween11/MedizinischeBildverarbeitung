@@ -1,4 +1,4 @@
-function [target_marked,reference_marked,YBest,XBest,ang,scale,score]= find_object(target, reference)
+function [target_marked,reference_marked,YBest,XBest,ang,scale,score]= find_object(target, reference);
 %{
 
 DESCRIPTION:
@@ -78,9 +78,7 @@ if score>lowest_score % if score of best match is good enough
     % Save reference only with rotation and scaling with "set2.m"
     reference_marked = false(size(target));
     reference_marked = set2(reference_marked, [yy,xx], 1, YBest-refY, XBest-refX);
-    figure;
-    subplot(1,2,1); imshow(target_marked); title('target');
-    subplot(1,2,2); imshow(reference_marked); title('ref');
+    
 else % if no match
     disp('Error: No match founded');
     target_marked = target;
@@ -90,7 +88,6 @@ else % if no match
     ang = NaN;
     scale = NaN;
     score = 0;
-    % TODO: Which values will be returned if no match was found?
 end
 
 end
