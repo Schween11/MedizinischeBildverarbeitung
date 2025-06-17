@@ -29,18 +29,11 @@ kidney_mod = rgb2gray(imread(kidney_path_mod));
 oval = rgb2gray(imread(oval_path));
 circle = rgb2gray(imread(circle_path));
 
-midZ = round(size(im_vol, 1) / 2);  % Mitte des Volumens in Z
-
 z_fov = tbl{row,10}:tbl{row,11};
-z_fov_r = tbl{row,10}:midZ;
-z_fov_l =midZ:tbl{row,11};
 
 im_fov   = im_vol(z_fov, :, :);
 seg_fov  = seg_vol(z_fov, :, :);
 
-
-im_fov_r = im_vol(:, :,z_fov_r);  im_fov_l = im_vol(:, :,z_fov_l); 
-seg_fov_r = seg_vol(:, :,z_fov_r);  seg_fov_l = seg_vol(:, :, z_fov_l); 
 
 %% 3) Intensitäten normalisieren auf [0,1] und Pixelgrößen
 mn    = min(im_fov,[],'all');
@@ -51,23 +44,25 @@ ImNorm = (im_fov - mn) ./ (mx - mn);
 
 info = niftiinfo(im_path);
 spacing = info.PixelDimensions; % [pixX, pixY, pixZ]
-pixX = spacing(1); % links-rechts (Sagittal)
-pixY = spacing(2); % vorne-hinten (Coronar)
-pixZ = spacing(3); % oben-unten (Axial)
+pixZ = spacing(1); 
+pixX = spacing(2);
+pixY = spacing(3); 
 
 %% 4) 2D-Slices extrahieren (identisch für Scan und Maske)
 slice_cor = squeeze(ImNorm(:, Xslice, :));      mask_cor  = squeeze(seg_fov(:, Xslice, :)); % koronaler Schnitt
 
 % Z-Hälfte bestimmen
-nz = size(slice_cor, 2);
-midZ = round(nz / 2);
+ny = size(slice_cor, 2);
+midY = round(ny / 2);
 
 % Linke und rechte Hälfte extrahieren
-slice_cor_l = slice_cor(:, 1:midZ);
-mask_cor_l  = mask_cor(:, 1:midZ);
+slice_cor_l = slice_cor(:, 1:midY);
+mask_cor_l  = mask_cor(:, 1:midY);
 
-slice_cor_r = slice_cor(:, midZ:end);
-mask_cor_r  = mask_cor(:, midZ:end);
+slice_cor_r = slice_cor(:, midY:end);
+mask_cor_r  = mask_cor(:, midY:end);
+
+volshow(im_fov)
 
 % Daten als Struktur ausgeben
 data = struct();
