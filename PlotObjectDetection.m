@@ -1,4 +1,4 @@
-case_id = 63;
+case_id = 183;
 data = loadCaseData(case_id);
 result = EdgeDetection(case_id);
 
@@ -17,21 +17,24 @@ reference_kidney_mod = result.kidney_mod_edge;
 figure;
 
 % 1 – Bilateral + Canny
-[target_marked_cd, reference_marked_c, ~, ~, ~, ~, ~] = find_object(target_canny_diff, reference_circle);
-subplot(2,4,1); imshow(target_marked_cd); title('Target: Bilateral + Canny');
+[target_marked_cd, reference_marked_c, ~, ~, ~, scale_c, score_c] = find_object(target_canny_diff, reference_circle);
+subplot(2,4,1); imshow(target_marked_cd); title(sprintf('Circle \nScore: %.2f, \nScale: %.2f', score_c, scale_c));
+
 subplot(2,4,5); imshow(reference_marked_c); title('Ref: Circle');
 
 % 2 – Diffusion + Canny
-[target_marked_cd, reference_marked_k, ~, ~, ~, ~, ~] = find_object(target_canny_diff, reference_kidney);
-subplot(2,4,2); imshow(target_marked_cd); title('Target: Diffusion + Canny');
+[target_marked_cd, reference_marked_k, ~, ~, ~, scale_k, score_k] = find_object(target_canny_diff, reference_kidney);
+subplot(2,4,2); imshow(target_marked_cd); title(sprintf('Kidney \nScore: %.2f, \nScale: %.2f', score_k, scale_k));
 subplot(2,4,6); imshow(reference_marked_k); title('Ref: Kidney');
 
 % 3 – Bilateral + Fuzzy
-[target_marked_cd, reference_marked_km, ~, ~, ~, ~, ~] = find_object(target_canny_diff, reference_kidney_mod);
-subplot(2,4,3); imshow(target_marked_cd); title('Target: Bilateral + Fuzzy');
+[target_marked_cd, reference_marked_km, ~, ~, ~, scale_km, score_km] = find_object(target_canny_diff, reference_kidney_mod);
+subplot(2,4,3); imshow(target_marked_cd); title(sprintf('Kidney Mod \nScore: %.2f, \nScale: %.2f', score_km, scale_km));
 subplot(2,4,7); imshow(reference_marked_km); title('Ref: Kidney Mod');
 
 % 4 – Diffusion + Fuzzy
-[target_marked_cd, reference_marked_o, ~, ~, ~, ~, ~] = find_object(target_canny_diff, reference_oval);
-subplot(2,4,4); imshow(target_marked_cd); title('Target: Diffusion + Fuzzy');
+[target_marked_cd, reference_marked_o, ~, ~, ~, scale_o, score_o] = find_object(target_canny_diff, reference_oval);
+subplot(2,4,4); imshow(target_marked_cd); title(sprintf('Oval \nScore: %.2f, \nScale: %.2f', score_o, scale_o));
 subplot(2,4,8); imshow(reference_marked_o); title('Ref: Oval');
+
+sgtitle(sprintf('Beste Matches bei Case  %d  – Diffusion + Canny', case_id), 'FontSize', 14, 'FontWeight', 'bold');

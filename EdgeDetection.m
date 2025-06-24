@@ -1,5 +1,5 @@
 function result = EdgeDetection(case_id);
-data = loadCaseData(case_id);
+data = loadCaseData_i(case_id);
 
 %% Auswahl der pathologische Seite 
 location_str = string(data.tbl{data.row,12});
@@ -99,7 +99,7 @@ fuzzy_diff_thin = bwmorph(BW_fuzzy_dif, 'thin', Inf);
 low = mean(I_diff(:)) * 0.5;
 high = mean(I_diff(:)) * 1.5;
 BW_diff = edge(I_diff, 'Canny',  low_thr, high_thr);
-BW_diff = bwareaopen(BW_diff, 100);
+% BW_diff = bwareaopen(BW_diff, 100);
 
 % Ausgabe als Struktur
 result = struct();

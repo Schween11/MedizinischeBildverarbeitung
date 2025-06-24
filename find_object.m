@@ -39,9 +39,9 @@ XBest = 0;
 
 for ang = 0:10:360 % rotate image
     rot_reference = rotate_binary_edge_image(reference,ang);
-    for scale = 0.5:0.1:2 % scale image
+    for scale = 1:0.05:1.5 % scale image
         scaled_reference = imresize(rot_reference, scale);
-%
+        
         ref = int64(size(scaled_reference)/2); % define reference point as middle point of the scaled and rotated reference
         refY = ref(1);
         refX = ref(2);
