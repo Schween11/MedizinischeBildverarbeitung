@@ -36,33 +36,39 @@ XBest = 0;
 % Save the results and settings (rotation angle and scaling factor) of the
 % best match.
 % You can use the following variables: YBest, XBest, ang, scale, score
+for flip_mode = 0:2
+    if flip_mode == 0
+        flipped_reference = reference;
+    elseif flip_mode == 1
+        flipped_reference = flipud(reference); % vertikal
+    end
 
-for ang = 0:10:360 % rotate image
-    rot_reference = rotate_binary_edge_image(reference,ang);
-    for scale = 1:0.05:1.5 % scale image
-        scaled_reference = imresize(rot_reference, scale);
-        
-        ref = int64(size(scaled_reference)/2); % define reference point as middle point of the scaled and rotated reference
-        refY = ref(1);
-        refX = ref(2);
-        [current_score,y,x,~] = generalized_hough_transform(target, scaled_reference, refY, refX); % call GHT with the modified reference        
-        if current_score > score % compare result to previuous results
-              % save results and settings
-              score = current_score;
-              YBest = y;
-              XBest = x;
-              best_ang = ang;
-              best_scale = scale;
+    for ang = 0:5:360 % rotate image
+        rot_reference = rotate_binary_edge_image(flipped_reference,ang);
+        for scale = 1:0.05:1.5 % scale image
+            scaled_reference = imresize(rot_reference, scale);
+            
+            ref = int64(size(scaled_reference)/2); % define reference point as middle point of the scaled and rotated reference
+            refY = ref(1);
+            refX = ref(2);
+            [current_score,y,x,~] = generalized_hough_transform(target, scaled_reference, refY, refX); % call GHT with the modified reference        
+            if current_score > score % compare result to previuous results
+                  % save results and settings
+                  score = current_score;
+                  YBest = y;
+                  XBest = x;
+                  best_ang = ang;
+                  best_scale = scale;
+            end
         end
     end
-end
-
-ang = best_ang;
-scale = best_scale;
-
+    
+    ang = best_ang;
+    scale = best_scale;
+    
 % --- Mark the results in the original image ------------------------------
 if score>lowest_score % if score of best match is good enough
-    
+        
     % rotate and scale reference according to best match
     result_ref = imresize(rotate_binary_edge_image(reference,ang), scale);
     ref = int64(size(result_ref)/2); % calculate reference point as in GHT

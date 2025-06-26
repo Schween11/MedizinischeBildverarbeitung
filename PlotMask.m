@@ -1,5 +1,5 @@
 case_id = 63;
-data = loadCaseData(case_id);
+data = loadCaseData_i(case_id);
 
 subplot(2,2,1);
 imshow(data.slice_cor); hold on;
