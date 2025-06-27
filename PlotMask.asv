@@ -19,8 +19,8 @@ axis off;
 
 subplot(2,2,4);
 imshow(data.slice_cor_r); hold on;
-redOverlayR = cat(3, ones(size(data.mask_cor_r)), zeros(size(data.mask_cor_r)), zeros(size(data.mask_cor_r)));
+redOverlayR = cat(3, ones(size(data.mask_cor_r)), zeros(size(data.mask_cor_r)), zeros(size(data.mask_cor_r_interp)));
 maske_rechts = imshow(redOverlayR);
-set(maske_rechts, 'AlphaData', 0.3 * data.mask_cor_r);
+set(maske_rechts, 'AlphaData', 0.3 * data.mask_cor_r_interp);
 title('\bfLinke Hälfte (Mitte bis Z-max)');
 axis off;

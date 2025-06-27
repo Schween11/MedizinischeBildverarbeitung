@@ -14,10 +14,10 @@ end
 %% Vorverarbeitungsschritte 
 
 % Parameter für Canny und Diffusionsfilter
-nmb_it = 30;
-grd_thr = 10;
-low_thr = 0.2;
-high_thr = 0.4;
+nmb_it = 20;
+grd_thr = 5;
+low_thr = 0.1;
+high_thr = 0.5;
 
 
 % Schritt 1: Glättung (linear, Gaußfilter)
@@ -96,10 +96,8 @@ fuzzy_bil_thin = bwmorph(BW_fuzzy_bil, 'thin', Inf);
 fuzzy_diff_thin = bwmorph(BW_fuzzy_dif, 'thin', Inf);
 
 % Canny Thresholds angepasst an Matrix Werte
-low = mean(I_diff(:)) * 0.5;
-high = mean(I_diff(:)) * 1.5;
 BW_diff = edge(I_diff, 'Canny',  low_thr, high_thr);
-% BW_diff = bwareaopen(BW_diff, 100);
+BW_diff = bwareaopen(BW_diff, 100);
 
 % Ausgabe als Struktur
 result = struct();

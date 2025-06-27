@@ -1,4 +1,4 @@
-function data = loadCaseData_i(case_id)
+case_id = 66;
 
 % === Formatierung der Case-ID ===
 case_str = sprintf('%05d', case_id);
@@ -49,46 +49,17 @@ ImNorm = (im_fov - mn) ./ (mx - mn);
 
 % === Koronalen Schnitt extrahieren ===
 slice_cor = squeeze(ImNorm(:, Xslice, :));     % [Z, Y]
-mask_cor  = squeeze(seg_fov(:, Xslice, :)); % [Z, Y]
-
-% ===  Auf 1mm-Z-Spacing interpolieren ===
-targetZ = 1; % 1mm Pixelabstand als Ziel
-scaling = pixZ / targetZ;
-newZ   = round(size(slice_cor,1) * scaling);
-
-slice_cor_interp = imresize(slice_cor,[newZ size(slice_cor,2)] );
-mask_cor_interp = imresize(mask_cor, [newZ size(mask_cor,2)] ); %Interpolation mit imresize Funktion. Zeile auf mit Skalierungsfaktor skaliert. Spalte bleibt gleich groß.
+mask_cor  = squeeze(seg_fov(:, Xslice, :));    % [Z, Y]
 
 % === Linke und rechte Bildhälfte (Y-Dimension splitten) ===
 nz = size(slice_cor, 2);
 midZ = round(nz / 2);
 
-slice_cor_l = slice_cor_interp(:, 1:midZ);
-mask_cor_l  = mask_cor_interp(:, 1:midZ);
+slice_cor_l = slice_cor(:, 1:midZ);
+mask_cor_l  = mask_cor(:, 1:midZ);
 
-slice_cor_r = slice_cor_interp(:, midZ+1:end);
-mask_cor_r  = mask_cor_interp(:, midZ+1:end);
+slice_cor_r = slice_cor(:, midZ+1:end);
+mask_cor_r  = mask_cor(:, midZ+1:end);
 
-% === Datenstruktur ausgeben ===
-data = struct();
-data.tbl = tbl;
-data.row = row;
-data.slice_cor = slice_cor;
-data.mask_cor = mask_cor;
-data.slice_cor_l = slice_cor_l;
-data.mask_cor_l = mask_cor_l;
-data.slice_cor_r = slice_cor_r;
-data.mask_cor_r = mask_cor_r;
-data.Xslice = Xslice;
-data.pixX = pixX;
-data.pixY = pixY;
-data.pixZ = pixZ;
-data.location_str = location_str;
 
-% Referenzformen
-data.circle = circle;
-data.oval = oval;
-data.kidney = kidney;
-data.kidney_mod = kidney_mod;
 
-end

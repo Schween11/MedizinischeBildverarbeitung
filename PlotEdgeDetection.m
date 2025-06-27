@@ -1,4 +1,4 @@
-case_id = 63;
+case_id = 183;
 result = EdgeDetection(case_id);
 
 %% Vergleich anzeigen
