@@ -1,4 +1,4 @@
-case_id = 63;
+case_id = 193;
 data = loadCaseData_i(case_id);
 
 subplot(2,2,1);

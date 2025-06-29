@@ -1,4 +1,4 @@
-case_id = 183;
+case_id = 33;
 data = loadCaseData(case_id);
 result = EdgeDetection(case_id);
 

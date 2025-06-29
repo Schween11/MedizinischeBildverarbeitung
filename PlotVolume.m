@@ -6,7 +6,7 @@ row     = tbl{:,1} == case_id; % erste Spalte (Case-Indizes)
 
 Xslice   = tbl{row, 9};    % sagittaler X-Index ("Niere maximal")
 
-%% 2) CT-Scan und Maske einlesen 
+% CT-Scan und Maske einlesen 
 base_path = 'allcasesunzipped';
 case_path = fullfile(base_path, ['case_' case_str]);
 im_path   = fullfile(case_path,'imaging.nii.gz'); % Path zum CT-Scan

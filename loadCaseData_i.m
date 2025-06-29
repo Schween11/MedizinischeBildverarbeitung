@@ -1,57 +1,62 @@
-function data = loadCaseData_i(case_id)
+%% Funktionsdefiniton mit Case-ID als Input (2 bis 3 Ziffern)
 
-% === Formatierung der Case-ID ===
+function data = loadCaseData_i(case_id) 
+
+%% Einlesen der Daten
+
+% Formatierung der Case-ID 
 case_str = sprintf('%05d', case_id);
 
-% === Excel-Tabelle einlesen ===
+% Excel-Tabelle einlesen
 tbl = readtable('patients_25.xlsx', 'VariableNamingRule', 'preserve');
 row = tbl{:, 1} == case_id;
 
-% === Wichtige Parameter aus Tabelle holen ===
+% Wichtige Parameter aus Tabelle holen
 Xslice = tbl{row, 9};              % Koronarer X-Schnitt (sagittal)
 z_start = tbl{row, 10};            % Start-Z
 z_end   = tbl{row, 11};            % End-Z
 location_str = string(tbl{row, 12});
 
-% === Pfade vorbereiten ===
+% Pfade definieren
 base_path = 'allcasesunzipped';
 case_path = fullfile(base_path, ['case_' case_str]);
 im_path   = fullfile(case_path, 'imaging.nii.gz');
 seg_path  = fullfile(case_path, 'segmentation.nii.gz');
 shapes_path = 'shapes';
 
-% === Referenzformen laden ===
+% Referenzformen laden
 kidney      = rgb2gray(imread(fullfile(shapes_path, 'KidneyCoronal.png')));
 kidney_mod  = rgb2gray(imread(fullfile(shapes_path, 'KidneyCoronal_mod.png')));
 oval        = rgb2gray(imread(fullfile(shapes_path, 'Oval.png')));
 circle      = rgb2gray(imread(fullfile(shapes_path, 'Circle.png')));
 
-% === CT-Scan und Maske einlesen ===
+% CT-Scan und Maske einlesen (in Form von Nifti-Dateien)
 im_vol  = niftiread(im_path);      % Volumen: [Z, X, Y]
 seg_vol = niftiread(seg_path) > 0; % Binärmaske
 
-% === Pixelgrößen aus NIfTI-Header holen ===
+% Pixelgrößen aus Nifti-Dateien holen (wichtig für spätere Interpolation)
 info = niftiinfo(im_path);
 spacing = info.PixelDimensions;  % [Z, X, Y]
 pixZ = spacing(1);               % Schichtdicke (oben–unten)
 pixX = spacing(2);               % links–rechts
 pixY = spacing(3);               % vorne–hinten
 
-% === Field-of-View auf Z-Achse beschränken ===
+%% Vorverarbeitung der Daten 
+% Field-of-View auf Z-Achse beschränken (in Tabelle vorgegeben)
 z_fov = z_start:z_end;
 im_fov = im_vol(z_fov, :, :);
 seg_fov = seg_vol(z_fov, :, :);
 
-% === Intensitäten normalisieren auf [0,1] ===
+% Werte normalisieren auf [0,1]
 mn = min(im_fov, [], 'all');
 mx = max(im_fov, [], 'all');
 ImNorm = (im_fov - mn) ./ (mx - mn);
 
-% === Koronalen Schnitt extrahieren ===
-slice_cor = squeeze(ImNorm(:, Xslice, :));     % [Z, Y]
-mask_cor  = squeeze(seg_fov(:, Xslice, :)); % [Z, Y]
+% Koronalen Schnitt extrahieren (XSlice aus Tabelle)
+slice_cor = squeeze(ImNorm(:, Xslice, :));    
+mask_cor  = squeeze(seg_fov(:, Xslice, :)); 
 
-% ===  Auf 1mm-Z-Spacing interpolieren ===
+% Auf 1mm-Z-Abstand interpolieren
 targetZ = 1; % 1mm Pixelabstand als Ziel
 scaling = pixZ / targetZ;
 newZ   = round(size(slice_cor,1) * scaling);
@@ -59,7 +64,8 @@ newZ   = round(size(slice_cor,1) * scaling);
 slice_cor_interp = imresize(slice_cor,[newZ size(slice_cor,2)] );
 mask_cor_interp = imresize(mask_cor, [newZ size(mask_cor,2)] ); %Interpolation mit imresize Funktion. Zeile auf mit Skalierungsfaktor skaliert. Spalte bleibt gleich groß.
 
-% === Linke und rechte Bildhälfte (Y-Dimension splitten) ===
+% Linke und rechte Bildhälfte Y-Dimension in der Mitte splitten (ungefähr
+% Wirbelsäule
 nz = size(slice_cor, 2);
 midZ = round(nz / 2);
 
@@ -69,7 +75,7 @@ mask_cor_l  = mask_cor_interp(:, 1:midZ);
 slice_cor_r = slice_cor_interp(:, midZ+1:end);
 mask_cor_r  = mask_cor_interp(:, midZ+1:end);
 
-% === Datenstruktur ausgeben ===
+%% Daten als Struktur speichern
 data = struct();
 data.tbl = tbl;
 data.row = row;
@@ -85,7 +91,7 @@ data.pixY = pixY;
 data.pixZ = pixZ;
 data.location_str = location_str;
 
-% Referenzformen
+% Referenzformen (für find_object Funktion)
 data.circle = circle;
 data.oval = oval;
 data.kidney = kidney;

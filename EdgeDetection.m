@@ -1,7 +1,11 @@
-function result = EdgeDetection(case_id);
-data = loadCaseData_i(case_id);
+%% Funktionsdefinition mit Case-ID als Input
 
-%% Auswahl der pathologische Seite 
+function result = EdgeDetection(case_id);
+
+% Aufrufen der vorverarbeiteten Daten im Struct
+data = loadCaseData_i(case_id); 
+
+% Auswahl der pathologische Seite 
 location_str = string(data.tbl{data.row,12});
 first_word = extractBefore(location_str, ',');
 
@@ -14,29 +18,22 @@ end
 %% Vorverarbeitungsschritte 
 
 % Parameter für Canny und Diffusionsfilter
-nmb_it = 20;
-grd_thr = 5;
-low_thr = 0.1;
-high_thr = 0.5;
+nmb_it = 5; % mehr Iteration --> stärkere Glättung --> weniger Details
+grd_thr = 5; % Gradiententhreshold --> Threshold hoch --> weniger Details 
+low_thr = 0.1; % zwischen low und high dann Kante, wenn mit anderen Kanten verbunden
+high_thr = 0.25; % alles drüber sichere Kante
 
-
-% Schritt 1: Glättung (linear, Gaußfilter)
-I_gauss = imgaussfilt(I_orig, 1, "FilterSize",3);
-
-% Schritt 2: Nichtlineare Glättung (Median)
-I_med = medfilt2(I_orig, [3 3]);
-
-% Schritt 3: Edge-preserving Smoothing (Bilateralfilter)
+% Bilateralfilter
 I_bilat = imbilatfilt(I_orig, 0.2, 4);
 
-% Schritt 4: Anisotrope Diffusion
+% Anisotroper Diffusionsfilter
 I_diff = imdiffusefilt(I_orig, 'NumberOfIterations', nmb_it, 'GradientThreshold', grd_thr);
 
-%% Fuzzy-basierte Kantenerkennung
+%% 1) Fuzzy-basierte Kantenerkennung
 
 % Gradient berechnen auf geglättetem Bild
 
-% Gradient berechnen
+% Gradient manuell berechnen
 [Gmag_bil, ~] = imgradient(I_bilat);    
 Gmag_bil = mat2gray(Gmag_bil);  % Normierung auf [0,1] sicherstellen
 
@@ -52,7 +49,7 @@ fis = addMF(fis, 'Gradient', 'gaussmf', [0.08 0.0], 'Name', 'low');
 fis = addMF(fis, 'Gradient', 'gaussmf', [0.08 0.15], 'Name', 'medium');
 fis = addMF(fis, 'Gradient', 'gaussmf', [0.08 0.4], 'Name', 'high');
 
-% Ausgabe: Konstante (für Sugeno nötig)
+% Ausgabe-MFs
 fis = addOutput(fis, [0 1], 'Name', 'EdgeStrength');
 fis = addMF(fis, 'EdgeStrength', 'constant', 0.1, 'Name', 'weak');
 fis = addMF(fis, 'EdgeStrength', 'constant', 0.5, 'Name', 'medium');
@@ -75,31 +72,29 @@ input_vec_dif = Gmag_dif(:);                      % 2D → 1D Vektor
 output_vec_dif = evalfis(fis, input_vec_dif);     % fuzzy-Auswertung
 edge_fuzzy_dif = reshape(output_vec_dif, size(Gmag_dif));
 
-% Schritt 5: Klassische Kantendetektion
-BW_orig  = edge(I_orig, 'Canny');
-BW_gauss = edge(I_gauss, 'Canny');
-BW_med   = edge(I_med, 'Canny');
-BW_bilat = edge(I_bilat, 'Canny');
+% Fuzzy binarisieren
+threshold = graythresh(edge_fuzzy_bil); % Threshold zur Binarisierung verwenden
+BW_fuzzy_bil = imbinarize(edge_fuzzy_bil, threshold);
+threshold_dif = graythresh(edge_fuzzy_dif);
+BW_fuzzy_dif = imbinarize(edge_fuzzy_dif, threshold_dif);
+
+% Überflüssige Pixel entfernen
+fuzzy_bil_thin = bwmorph(BW_fuzzy_bil, 'thin', Inf);
+fuzzy_diff_thin = bwmorph(BW_fuzzy_dif, 'thin', Inf);
+
+
+%% 2) Canny-Kantendetektion
+BW_diff = edge(I_diff, 'Canny',  low_thr, high_thr);
+BW_diff = bwmorph(BW_diff,"skel");
+BW_diff = bwareaopen(BW_diff, 150);
+
+% Kantendetektion der Shapes (für find_object Funktion)
 circle_edge = edge(data.circle, 'Canny');
 oval_edge = edge(data.oval, 'Canny');
 kidney_edge = edge(data.kidney, 'Canny');
 kidney_mod_edge = edge(data.kidney_mod, 'Canny');
 
-% Schritt 6: Fuzzy binarisieren
-threshold = graythresh(edge_fuzzy_bil); %T hreshold zur Binarisierung verwenden
-BW_fuzzy_bil = imbinarize(edge_fuzzy_bil, threshold);
-threshold_dif = graythresh(edge_fuzzy_dif);
-BW_fuzzy_dif = imbinarize(edge_fuzzy_dif, threshold_dif);
-
-% Schritt 7: Überflüssige Pixel entfernen
-fuzzy_bil_thin = bwmorph(BW_fuzzy_bil, 'thin', Inf);
-fuzzy_diff_thin = bwmorph(BW_fuzzy_dif, 'thin', Inf);
-
-% Canny Thresholds angepasst an Matrix Werte
-BW_diff = edge(I_diff, 'Canny',  low_thr, high_thr);
-BW_diff = bwareaopen(BW_diff, 100);
-
-% Ausgabe als Struktur
+% Ausgabe als Struktur speichern
 result = struct();
 result.BW_bilat = BW_bilat;
 result.BW_diff = BW_diff;
