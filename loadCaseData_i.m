@@ -30,6 +30,7 @@ kidney_mod  = rgb2gray(imread(fullfile(shapes_path, 'KidneyCoronal_mod.png')));
 oval        = rgb2gray(imread(fullfile(shapes_path, 'Oval.png')));
 circle      = rgb2gray(imread(fullfile(shapes_path, 'Circle.png')));
 
+
 % CT-Scan und Maske einlesen (in Form von Nifti-Dateien)
 im_vol  = niftiread(im_path);      % Volumen: [Z, X, Y]
 seg_vol = niftiread(seg_path) > 0; % Binärmaske
