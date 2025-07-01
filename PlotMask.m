@@ -15,9 +15,11 @@ axis off;
 subplot(2,2,3);
 imshow(data.slice_cor_l); hold on;
 redOverlayL = cat(3, ones(size(data.mask_cor_l)), zeros(size(data.mask_cor_l)), zeros(size(data.mask_cor_l)));
-%greenOverlayL = cat(3, zeros(size(data.mask_cor_tumor_l)), ones(size(data.mask_cor_tumor_l)), zeros(size(data.mask_cor_tumor_l)));
+greenOverlayL = cat(3, zeros(size(data.mask_cor_tumor_l)), ones(size(data.mask_cor_tumor_l)), zeros(size(data.mask_cor_tumor_l)));
 maske_links = imshow(redOverlayL);
 set(maske_links, 'AlphaData', 0.3 * data.mask_cor_l);
+maske_tum_l = imshow(greenOverlayL);
+set(maske_tum_l, 'AlphaData', 0.3 * data.mask_cor_tumor_l);
 title('\bfRechte Hälfte (Z-min bis Mitte)');
 axis off;
 
@@ -27,5 +29,7 @@ redOverlayR = cat(3, ones(size(data.mask_cor_r)), zeros(size(data.mask_cor_r)), 
 greenOverlayR = cat(3, zeros(size(data.mask_cor_tumor_r)), ones(size(data.mask_cor_tumor_r)), zeros(size(data.mask_cor_tumor_r)));
 maske_rechts = imshow(redOverlayR);
 set(maske_rechts, 'AlphaData', 0.3 * data.mask_cor_r);
+maske_tum_r = imshow(greenOverlayR);
+set(maske_tum_r, 'AlphaData', 0.3 * data.mask_cor_tumor_r);
 title('\bfLinke Hälfte (Mitte bis Z-max)');
 axis off;

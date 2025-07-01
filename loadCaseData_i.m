@@ -33,8 +33,8 @@ circle      = rgb2gray(imread(fullfile(shapes_path, 'Circle.png')));
 
 % CT-Scan und Maske einlesen (in Form von Nifti-Dateien)
 im_vol  = niftiread(im_path);      % Volumen: [Z, X, Y]
-seg_vol = niftiread(seg_path) > 0; % Binärmaske
-seg_vol_tumor = niftiread(seg_path) > 1.5;
+seg_vol = niftiread(seg_path) == 1; % Binärmaske
+seg_vol_tumor = niftiread(seg_path) == 2;
 
 % Pixelgrößen aus Nifti-Dateien holen (wichtig für spätere Interpolation)
 info = niftiinfo(im_path);
