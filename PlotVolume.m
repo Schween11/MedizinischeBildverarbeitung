@@ -14,5 +14,5 @@ seg_path  = fullfile(case_path,'segmentation.nii.gz'); % Path zur Maske
 
 im_vol   = niftiread(im_path);    % Einlesen des CT-Scans (nxnxn double Matrix)
 seg_vol  = niftiread(seg_path) > 0;   % Binärmaske
-
-volshow(im_vol)
+%niftiinfo(seg_path)
+volshow(seg_vol);

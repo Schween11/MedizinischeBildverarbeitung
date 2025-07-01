@@ -33,7 +33,8 @@ circle      = rgb2gray(imread(fullfile(shapes_path, 'Circle.png')));
 
 % CT-Scan und Maske einlesen (in Form von Nifti-Dateien)
 im_vol  = niftiread(im_path);      % Volumen: [Z, X, Y]
-seg_vol = niftiread(seg_path) > 0; % Binärmaske
+seg_vol = niftiread(seg_path) < 2; % Binärmaske
+seg_vol_tumor = niftiread(seg_path) > 1;
 
 % Pixelgrößen aus Nifti-Dateien holen (wichtig für spätere Interpolation)
 info = niftiinfo(im_path);
@@ -47,15 +48,18 @@ pixY = spacing(3);               % vorne–hinten
 z_fov = z_start:z_end;
 im_fov = im_vol(z_fov, :, :);
 seg_fov = seg_vol(z_fov, :, :);
+seg_fov_tumor = seg_vol_tumor(z_fov, :, :);
 
 % Werte normalisieren auf [0,1]
-mn = min(im_fov, [], 'all');
-mx = max(im_fov, [], 'all');
-ImNorm = (im_fov - mn) ./ (mx - mn);
+%mn = min(im_fov, [], 'all');
+%mx = max(im_fov, [], 'all');
+%ImNorm = (im_fov - mn) ./ (mx - mn);
+ImNorm = im2single(im_fov);
 
 % Koronalen Schnitt extrahieren (XSlice aus Tabelle)
 slice_cor = squeeze(ImNorm(:, Xslice, :));    
 mask_cor  = squeeze(seg_fov(:, Xslice, :)); 
+mask_cor_tumor = squeeze(seg_fov_tumor(:, Xslice, :));
 
 % Auf 1mm-Z-Abstand interpolieren
 targetZ = 1; % 1mm Pixelabstand als Ziel
@@ -64,6 +68,7 @@ newZ   = round(size(slice_cor,1) * scaling);
 
 slice_cor_interp = imresize(slice_cor,[newZ size(slice_cor,2)] );
 mask_cor_interp = imresize(mask_cor, [newZ size(mask_cor,2)] ); %Interpolation mit imresize Funktion. Zeile auf mit Skalierungsfaktor skaliert. Spalte bleibt gleich groß.
+mask_cor_tumor_interp = imresize(mask_cor_tumor, [newZ size(mask_cor,2)] ); 
 
 % Linke und rechte Bildhälfte Y-Dimension in der Mitte splitten (ungefähr
 % Wirbelsäule
@@ -72,9 +77,11 @@ midZ = round(nz / 2);
 
 slice_cor_l = slice_cor_interp(:, 1:midZ);
 mask_cor_l  = mask_cor_interp(:, 1:midZ);
+mask_cor_tumor_l  = mask_cor_tumor_interp(:, 1:midZ);
 
 slice_cor_r = slice_cor_interp(:, midZ+1:end);
 mask_cor_r  = mask_cor_interp(:, midZ+1:end);
+mask_cor_tumor_r  = mask_cor_tumor_interp(:, 1:midZ);
 
 %% Daten als Struktur speichern
 data = struct();
@@ -91,6 +98,9 @@ data.pixX = pixX;
 data.pixY = pixY;
 data.pixZ = pixZ;
 data.location_str = location_str;
+data.mask_cor_tumor = mask_cor_tumor;
+data.mask_cor_tumor_l = mask_cor_tumor_l;
+data.mask_cor_tumor_r = mask_cor_tumor_r;
 
 % Referenzformen (für find_object Funktion)
 data.circle = circle;
