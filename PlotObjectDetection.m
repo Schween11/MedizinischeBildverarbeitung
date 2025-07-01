@@ -37,6 +37,5 @@ subplot(2,4,7); imshow(reference_marked_km); title('Ref: Kidney Mod');
 subplot(2,4,4); imshow(target_marked_cd); title(sprintf('Oval \nScore: %.2f, \nScale: %.2f', score_o, scale_o));
 subplot(2,4,8); imshow(reference_marked_o); title('Ref: Oval');
 
-%% gespiegelte Formen 
 
 sgtitle(sprintf('Beste Matches bei Case  %d  – Diffusion + Canny', case_id), 'FontSize', 14, 'FontWeight', 'bold');
