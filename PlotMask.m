@@ -1,4 +1,4 @@
-case_id = 193;
+case_id = 33;
 data = loadCaseData_i(case_id);
 
 subplot(2,2,1);
@@ -15,7 +15,7 @@ axis off;
 subplot(2,2,3);
 imshow(data.slice_cor_l); hold on;
 redOverlayL = cat(3, ones(size(data.mask_cor_l)), zeros(size(data.mask_cor_l)), zeros(size(data.mask_cor_l)));
-greenOverlayL = cat(3, zeros(size(data.mask_cor_tumor_l)), ones(size(data.mask_cor_tumor_l)), zeros(size(data.mask_cor_tumor_l)));
+%greenOverlayL = cat(3, zeros(size(data.mask_cor_tumor_l)), ones(size(data.mask_cor_tumor_l)), zeros(size(data.mask_cor_tumor_l)));
 maske_links = imshow(redOverlayL);
 set(maske_links, 'AlphaData', 0.3 * data.mask_cor_l);
 title('\bfRechte Hälfte (Z-min bis Mitte)');

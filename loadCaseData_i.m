@@ -33,8 +33,8 @@ circle      = rgb2gray(imread(fullfile(shapes_path, 'Circle.png')));
 
 % CT-Scan und Maske einlesen (in Form von Nifti-Dateien)
 im_vol  = niftiread(im_path);      % Volumen: [Z, X, Y]
-seg_vol = niftiread(seg_path) < 2; % Binärmaske
-seg_vol_tumor = niftiread(seg_path) > 1;
+seg_vol = niftiread(seg_path) > 0; % Binärmaske
+seg_vol_tumor = niftiread(seg_path) > 1.5;
 
 % Pixelgrößen aus Nifti-Dateien holen (wichtig für spätere Interpolation)
 info = niftiinfo(im_path);
@@ -51,10 +51,9 @@ seg_fov = seg_vol(z_fov, :, :);
 seg_fov_tumor = seg_vol_tumor(z_fov, :, :);
 
 % Werte normalisieren auf [0,1]
-%mn = min(im_fov, [], 'all');
-%mx = max(im_fov, [], 'all');
-%ImNorm = (im_fov - mn) ./ (mx - mn);
-ImNorm = im2single(im_fov);
+mn = min(im_fov, [], 'all');
+mx = max(im_fov, [], 'all');
+ImNorm = (im_fov - mn) ./ (mx - mn);
 
 % Koronalen Schnitt extrahieren (XSlice aus Tabelle)
 slice_cor = squeeze(ImNorm(:, Xslice, :));    
