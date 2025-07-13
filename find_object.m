@@ -36,11 +36,11 @@ XBest = 0;
 % Save the results and settings (rotation angle and scaling factor) of the
 % best match.
 % You can use the following variables: YBest, XBest, ang, scale, score
-for flip_mode = 0:2
-    if flip_mode == 0
+for flip = 0:1
+    if flip == 0
         flipped_reference = reference;
-    elseif flip_mode == 1
-        flipped_reference = flipud(reference); % vertikal
+    elseif flip == 1
+        flipped_reference = fliplr(reference); % horizontal spiegeln (vertikale bei gegebenen Funktion weniger nötig)
     end
 
     for ang = 0:5:360 % rotate image
@@ -78,9 +78,10 @@ if score>lowest_score % if score of best match is good enough
     % find all y,x cordinates (=edges)
     [yy,xx] = find(result_ref);
     
+    
     % Mark best match on target image in Red (255) with "set2.m"
     target_marked = set2(target, [yy,xx], 255, YBest-refY, XBest-refX); 
-    
+
     % Save reference only with rotation and scaling with "set2.m"
     reference_marked = false(size(target));
     reference_marked = set2(reference_marked, [yy,xx], 1, YBest-refY, XBest-refX);
