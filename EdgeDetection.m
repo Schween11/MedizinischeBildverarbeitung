@@ -2,92 +2,121 @@
 
 function result = EdgeDetection(case_id);
 
-% Aufrufen der vorverarbeiteten Daten im Struct
+%% 0. Aufrufen der vorverarbeiteten Daten im Struct
 data = loadCaseData_i(case_id); 
+
+%% 1. Kantendetektion für Nierenlokalisation
 
 % Auswahl der pathologische Seite 
 location_str = string(data.tbl{data.row,12});
 first_word = extractBefore(location_str, ',');
 
 if first_word == "rechts"
-    I_orig = data.slice_cor_r;
+    I_kid = data.slice_kid_r;
 else 
-    I_orig = data.slice_cor_l;
+    I_kid = data.slice_kid_l;
 end
 
-%% Vorverarbeitungsschritte 
+%% 1.1. Vorverarbeitungsschritte 
 
-% Parameter für Canny und Diffusionsfilter 
-nmb_it = 5; % mehr Iteration --> stärkere Glättung --> weniger Details
-grd_thr = 10; % Gradiententhreshold --> Threshold hoch --> weniger Details 
-low_thr = 0.1; % zwischen low und high dann Kante, wenn mit anderen Kanten verbunden
-high_thr = 0.4; % alles drüber sichere Kante
-min_pix = 160; % minimale Anzahl der zusammenhängenden Pixel um nicht herausgefiltert zu werden
+% sehr leichte Kontrastverstärkung
+I_cont = adapthisteq(I_kid, 'NumTiles', [8 8], 'ClipLimit', 0.005);
 
+% Anisotroper Diffusionsfilter (anisotrope Glättung)
+I_tum_diff = imdiffusefilt(I_cont ,"GradientThreshold",5,"NumberOfIterations",5);
 
-% Bilateralfilter
-I_bilat = imbilatfilt(I_orig, 0.2, 4);
+%% 1.2. Canny-Kantendetektion --> zur Detektion der Niere, stark vereinfachtes Kantenbild
+BW_edge = edge(I_tum_diff, 'Canny',0.2,0.6);
+BW_edge_less = bwareaopen(BW_edge, 150); %hilfreich bei
+% Nierensegmentation, herausfiltern von kleinen Strukturen
 
-% Anisotroper Diffusionsfilter
-I_diff = imdiffusefilt(I_orig, 'NumberOfIterations', nmb_it, 'GradientThreshold', grd_thr);
+%% 1.3. Herausfiltern von langen vertikalen Strukturen
+% Nach Kantendetektion und eventuellem bwareaopen
+% Ausgangsbild: BW (dein Kantenbild nach Canny + bwareaopen)
+CC = bwconncomp(BW_edge_less);
+stats = regionprops(CC, 'Area', 'BoundingBox');
 
-%% 1) Canny-Kantendetektion
-BW_diff = edge(I_diff, 'Canny', low_thr, high_thr);
-BW_diff = bwareaopen(BW_diff, min_pix);
-BW_bilat = edge(I_bilat, 'Canny',  low_thr, high_thr);
-BW_bilat = bwareaopen(BW_bilat, min_pix); % Filtern zusammenhängender Pixel mit 8er Konnektivität (Diagonale)
+% Parameter: was gilt als "gute" Struktur
+minAR = 0.5;         % Mindest-Seitenverhältnis Höhe/Breite
+maxAR = 2 ;         % Maximal-Seitenverhältnis
 
-%% 2) Herausfiltern von langen vertikalen Strukturen
-tic
-% Verbundene Komponenten finden
-% bwconncomp (BlackAndWhiteConnectedComponents) erstellt struct mit: Konnektiviät, Bildgröße, Anzahl
-% gefundener Objekte und Pixelliste zusammenhängender Komponenten -->
-% findet zusammenhängenden Strukturen/Pixel und listet sie auf 
-
-CC = bwconncomp(BW_diff);
-
-% BoundingBox berechnen
-% --> kleinst mögliches Rechteck, welches alle Pixel vollständig umhüllt 
-stats = regionprops(CC, 'BoundingBox'); % [x, y, Breite, Höhe]
-
-% Bildhöhe als Referenz
-img_height = size(BW_diff, 1);
-
-% Schleife, die durch alle detektierten Komponenten der bwconncomp Funktion
-% iteriert: i = NumObject
+% Leeres Bild für die besten Strukturen
+BW_best = zeros(size(BW_edge_less));
 
 for i = 1:length(stats)
-    bbox = stats(i).BoundingBox; 
-    height = bbox(4); % vierte Komponente ist Höhe
+    area = stats(i).Area;
+    bbox = stats(i).BoundingBox;
     width = bbox(3);
-    % Falls Komponente fast die gesamte Höhe einnimmt --> entfernen
-    if height > 0.9 * img_height % ≥ 90% der Bildhöhe
-        BW_diff(CC.PixelIdxList{i}) = 0; % alle Pixel des betroffenen Objekts auf 0 setzen
+    height = bbox(4);
+    aspectRatio = height / width;
+
+    if aspectRatio >= minAR && aspectRatio <= maxAR
+       BW_best(CC.PixelIdxList{i}) = true;
     end
 end
 
-% regionprops und bwconncomp, sehr mächtig 
-% -->hier wäre es noch möglich nach anderen Objekteigenschaften zu filtern:
-% Area, Breite der BoundingBox, etc...
+ 
+%% Bounding-Boxes anzeigen 
+% figure; imshow(BW_edge_less); hold on;
+% 
+% % Alle Bounding Boxes zeichnen
+% for i = 1:length(stats)
+%     bbox = stats(i).BoundingBox;  % [x, y, width, height]
+%     rectangle('Position', bbox, 'EdgeColor', 'g', 'LineWidth', 1);
+% end
+% 
+% title('Alle Bounding Boxes');
 
-toc
-% Canny-Kantendetektion der Shapes (für find_object Funktion)
+%% 1.4. Canny-Kantendetektion der Masken (für späteren Vergleich)
+mask_edge = edge(data.mask_kid_interp, "Canny");
+mask_tum_edge = edge(data.mask_kid_tumor_interp,"Canny");
+
+%% 2. Kantendetektion für Tumorlokalisation
+
+% Auswahl der pathologische Seite 
+location_str = string(data.tbl{data.row,12});
+first_word = extractBefore(location_str, ',');
+
+if first_word == "rechts"
+    I_tum = data.slice_tum_r;
+else 
+    I_tum = data.slice_tum_l;
+end
+
+% Adaptive Histogramm-Angleichung (Kontrastverstärkung)
+I_tum_cont = adapthisteq(I_tum, 'NumTiles', [8 8], 'ClipLimit', 0.04);
+
+% analog zu Nierenlokalisation (andere Parameter)
+I_tum_diff = imdiffusefilt(I_tum_cont ,"GradientThreshold",3,"NumberOfIterations",3);
+I_tum_edge = edge(I_tum_diff, 'Canny',0.3,0.7);
+
+%% 3. Canny-Kantendetektion der Shapes (für find_object Funktion)
 circle_edge = edge(data.circle, 'Canny');
 oval_edge = edge(data.oval, 'Canny');
 kidney_edge = edge(data.kidney, 'Canny');
 kidney_mod_edge = edge(data.kidney_mod, 'Canny');
 
-% Ausgabe als Struktur speichern
+%% 4. Canny-Kantendetektion der Masken (für späteren Vergleich)
+mask_edge = edge(data.mask_kid_interp, "Canny");
+mask_tum_edge = edge(data.mask_kid_tumor_interp,"Canny");
+
+
+%% Ausgabe als Struktur speichern
 result = struct();
-result.BW_bilat = BW_bilat;
-result.BW_diff = BW_diff;
-result.I_orig = I_orig;
+result.BW_edge_less = BW_edge_less;
+result.BW_best = BW_best;
 result.case_id = case_id;
+
+% Niere
 result.kidney_edge = kidney_edge;
 result.kidney_mod_edge = kidney_mod_edge;
 result.circle_edge = circle_edge;
 result.oval_edge = oval_edge;
-result.mask_cor_r = data.mask_cor_r;
-result.mask_cor_l = data.mask_cor_l;
+result.mask_kid_r = data.mask_kid_r;
+result.mask_kid_l = data.mask_kid_l;
+result.mask_edge = mask_edge;
+result.mask_tum_edge = mask_tum_edge;
+
+% Tumor
 
 end

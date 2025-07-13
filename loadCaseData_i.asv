@@ -30,16 +30,11 @@ circle      = rgb2gray(imread(fullfile(shapes_path, 'Circle.png')));
 
 % CT-Scan und Maske einlesen (in Form von Nifti-Dateien)
 im_vol  = niftiread(im_path);      % Volumen: [Z, X, Y]
-
-seg_vol = niftiread(seg_path) == 1; % Binärmaske
-seg_vol_tumor = niftiread(seg_path) == 2;
-
 mask_vol = niftiread(seg_path); % Multilabel-Maske: 0 = Hintergrund, 1 = Niere, 2 = Tumor
 
 %% Durch die Slices nur den Tumor anschauen
 %seg_vol_tum = mask_vol == 2;
 % imshow3D(permute(seg_vol_tum, [1 3 2]))
-
 
 % Pixelgrößen aus Nifti-Dateien holen (wichtig für spätere Interpolation)
 info = niftiinfo(im_path);
@@ -49,18 +44,6 @@ pixX = spacing(2);               % links–rechts
 pixY = spacing(3);               % vorne–hinten
 
 %% Vorverarbeitung der Daten 
-
-% Field-of-View auf Z-Achse beschränken (in Tabelle vorgegeben)
-z_fov = z_start:z_end;
-im_fov = im_vol(z_fov, :, :);
-seg_fov = seg_vol(z_fov, :, :);
-seg_fov_tumor = seg_vol_tumor(z_fov, :, :);
-
-% Werte normalisieren auf [0,1]
-mn = min(im_fov, [], 'all');
-mx = max(im_fov, [], 'all');
-ImNorm = (im_fov - mn) ./ (mx - mn);
-
 
 % Koronalen Schnitt extrahieren (XSlice aus Tabelle)
 slice_cor_all  = squeeze(im_vol(:, x_slice_kidney, :));

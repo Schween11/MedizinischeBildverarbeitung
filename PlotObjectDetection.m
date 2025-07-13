@@ -1,8 +1,9 @@
-case_id = 159;
+tic
+case_id = 3;
 data = loadCaseData_i(case_id);
 result = EdgeDetection(case_id);
 
-target_canny_diff = result.BW_diff;
+target_canny_diff = result.BW_best;
 % target_canny_bilat = result.BW_bilat;
 % target_fuzzy_bilat = result.fuzzy_bil_thin;
 % target_fuzzy_diff = result.fuzzy_diff_thin;
@@ -19,11 +20,10 @@ figure;
 % Form 1
 [target_marked_cd, reference_marked_c, ~, ~, ~, scale_c, score_c] = find_object(target_canny_diff, reference_circle);
 subplot(2,4,1); imshow(target_marked_cd); title(sprintf('Circle \nScore: %.2f, \nScale: %.2f', score_c, scale_c));
-
 subplot(2,4,5); imshow(reference_marked_c); title('Ref: Circle');
 
 % Form 2
-[target_marked_cd, reference_marked_k, ~, ~, ~, scale_k, score_k] = find_object(target_canny_diff, reference_kidney);
+[target_marked_cd, reference_marked_k, XBest,YBest, scale_k, score_k] = find_object(target_canny_diff, reference_kidney);
 subplot(2,4,2); imshow(target_marked_cd); title(sprintf('Kidney \nScore: %.2f, \nScale: %.2f', score_k, scale_k));
 subplot(2,4,6); imshow(reference_marked_k); title('Ref: Kidney');
 
@@ -39,3 +39,4 @@ subplot(2,4,8); imshow(reference_marked_o); title('Ref: Oval');
 
 
 sgtitle(sprintf('Beste Matches bei Case  %d  – Diffusion + Canny', case_id), 'FontSize', 14, 'FontWeight', 'bold');
+toc

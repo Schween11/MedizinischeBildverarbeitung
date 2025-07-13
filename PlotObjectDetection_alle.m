@@ -1,19 +1,20 @@
 % === Einstellungen ===
+tic
 excel_path = 'patients_25.xlsx';  % <-- Excel-Datei mit Case-IDs
 
 % === Daten aus Excel einlesen und aus caseData laden ===
-patients = readtable(excel_path);
+patients = readtable('patients_25.xlsx', 'VariableNamingRule', 'preserve');
 valid_rows = strcmp(patients{:,8}, 'Y');
 case_ids = patients{valid_rows, 1};
 
 % === Initialisierung ===
 num_cases = length(case_ids);
-ref_names = {'circle', 'oval', 'kidney', 'kidney_mod'};
+ref_names = { 'oval', 'kidney', 'kidney_mod'};
 
 best_targets = cell(num_cases, 1);
 best_refs = cell(num_cases, 1);
 titles = cell(num_cases, 1);
-
+tic
 % === Hauptschleife über alle Cases ===
 for idx = 1:num_cases
     case_id = case_ids(idx);
@@ -21,11 +22,10 @@ for idx = 1:num_cases
     try
         % --- Lade Bilddaten ---
         result = EdgeDetection(case_id);
-        target = result.BW_diff;
+        target = result.BW_best;
 
         % --- Lade Referenzformen ---
         references = struct( ...
-            'circle', result.circle_edge, ...
             'oval', result.oval_edge, ...
             'kidney', result.kidney_edge, ...
             'kidney_mod', result.kidney_mod_edge ...
@@ -75,7 +75,7 @@ for i = 1:num_cases
     subplot(rows, cols, i);
     imshow(best_targets{i});
     title(titles{i}, 'FontSize', 8);
-
+toc
 end
-
+toc
 sgtitle('Beste Matches je Case – target\_canny\_diff', 'FontSize', 14, 'FontWeight', 'bold');
