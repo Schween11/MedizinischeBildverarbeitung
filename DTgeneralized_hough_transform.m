@@ -1,4 +1,4 @@
-function [score,y,x,acc] = generalized_hough_transform(target, reference, refY, refX)
+function [score,y,x,acc] = DTgeneralized_hough_transform(target, reference, refY, refX)
 %{
 DESCRIPTION:
 modified from: http://mbcoder.com/generalized-hough-transform/
@@ -71,17 +71,103 @@ end
 % hough space ist Matrix in der größe des targets. die meisten tx, ty werte
 % die vorkommen sind wahrscheinlichste mittelpunkt und haben
 % dementsprechend den größten wert der Matrix --> wie ein Wärmebild
-% --- Find best match in hough space --------------------------------------
+% --- Find best match in hough space with deformation tolerance ----------
+
 acc = houghspace;
-acc = acc./sqrt(sum(sum(reference))); % normalize acc by the size of the reference to avoid bias towards large reference
-score = max(max(acc)); % use maximum of accumulator as score (Spalten und Zeilenmaxima)
-[y, x] = find(acc == max(max(acc)), 1, 'first'); % find maximum position
+acc = acc ./ sqrt(sum(sum(reference))); % normalize acc by reference size (to prevent bias toward large shapes)
 
-%{
-Optional: Finnerd a better metric (score) to describe the quality of the best
-match that can be used in "find_object.m" to determine if a match was
-found at all. Currently max(acc) is used for that purpose.
-%}
+% Define spreading window size (2*l + 1)
+l = 12; % empirical value used in DTGHT paper (corresponds to 25x25 window)
 
+% Pad accumulator to allow windowed sum near borders
+acc_padded = padarray(acc, [l l]); 
+
+% Compute local sum (vote mass) using 2D convolution with uniform window
+window = ones(2*l+1, 2*l+1); 
+M = conv2(acc_padded, window, 'valid'); % M has same size as original acc
+
+% Find position with highest vote mass (clustered peak)
+[score, idx] = max(M(:));
+[y, x] = ind2sub(size(M), idx);
+
+% --- Extraneous-vs-Valid-Segment-Prüfung -------------------------
+angle_thresh = pi/8;
+% Fenstergröße
+l = 12;
+[y_tar, x_tar] = find(target > 0);
+mask = (x_tar > (x - l)) & (x_tar < (x + l)) & (y_tar > (y - l)) & (y_tar < (y + l));
+x_tar = x_tar(mask);
+y_tar = y_tar(mask);
+
+valid = 0;
+extraneous = 0;
+
+for i = 1:length(y_tar)
+    py = y_tar(i);
+    px = x_tar(i);
+    g = gradient_tar(py, px);
+
+    for bin = 1:maxAngles
+        for j = 1:binCounter(bin)
+            dy = Rtable(bin,j,1);
+            dx = Rtable(bin,j,2);
+            qy = py + dy;
+            qx = px + dx;
+            if qy > 0 && qy <= size(target,1) && qx > 0 && qx <= size(target,2)
+                % Check ob die Richtung übereinstimmt
+                g_ref = gradient_ref(refY + dy, refX + dx);
+                if abs(g - g_ref) < angle_thresh
+                    valid = valid + 1;
+                else
+                    extraneous = extraneous + 1;
+                end
+            end
+        end
+    end
+end
+
+% Wenn zu viele extraneous votes → Ablehnen
+if extraneous > valid
+    score = 0;
+    y = NaN;
+    x = NaN;
+end
+
+% --- Similarity Measure Sim(S, I) nach Matching-Test ---------------------
+% Vektor B enthält pro Modellpunkt, ob er im Target gefunden wurde
+m = sum(binCounter); % Anzahl aller Referenzpunkte im Sketch (S)
+B = false(1, m);      % Boolean-Vektor: ob ein Modellpunkt bestätigt wurde
+b_idx = 1;            % Zähler über Modellpunkte
+
+for bin = 1:maxAngles
+    for j = 1:binCounter(bin)
+        dy = Rtable(bin,j,1);
+        dx = Rtable(bin,j,2);
+        ty = y + dy;
+        tx = x + dx;
+
+        if ty < 1 || ty > size(target,1) || tx < 1 || tx > size(target,2)
+            b_idx = b_idx + 1;
+            continue;
+        end
+
+        % Wenn im Target ein Kantenpunkt an der erwarteten Position liegt → Treffer
+        if target(ty, tx) > 0
+            % zusätzlich Gradienten vergleichen
+            g_tar = gradient_tar(ty, tx);
+            g_ref = gradient_ref(refY + dy, refX + dx);
+            if abs(g_tar - g_ref) < angle_thresh
+                B(b_idx) = true;
+            end
+        end
+        b_idx = b_idx + 1;
+    end
+end
+
+% Ähnlichkeitsmaß berechnen (Anteil der bestätigten Modellpunkte)
+sim_score = sum(B) / m;
+
+% finaler Score ist jetzt sim_score statt Akkumulatorwert
+score = sim_score;
 
 end

@@ -27,6 +27,8 @@ kidney      = rgb2gray(imread(fullfile(shapes_path, 'KidneyCoronal.png')));
 kidney_mod  = rgb2gray(imread(fullfile(shapes_path, 'KidneyCoronal_mod.png')));
 oval        = rgb2gray(imread(fullfile(shapes_path, 'Oval.png')));
 circle      = rgb2gray(imread(fullfile(shapes_path, 'Circle.png')));
+oval_half   = im2gray(imread(fullfile(shapes_path, 'Oval_half.png')));
+circle_half   = im2gray(imread(fullfile(shapes_path, 'Circle_half.png')));
 
 % CT-Scan und Maske einlesen (in Form von Nifti-Dateien)
 im_vol  = niftiread(im_path);      % Volumen: [Z, X, Y]
@@ -38,7 +40,7 @@ mask_vol = niftiread(seg_path); % Multilabel-Maske: 0 = Hintergrund, 1 = Niere, 
 
 %% Durch die Slices nur den Tumor anschauen
 %seg_vol_tum = mask_vol == 2;
-% imshow3D(permute(seg_vol_tum, [1 3 2]))
+%imshow3D(permute(seg_vol_tum, [1 3 2]))
 
 
 % Pixelgrößen aus Nifti-Dateien holen (wichtig für spätere Interpolation)
@@ -156,5 +158,7 @@ data.circle = circle;
 data.oval = oval;
 data.kidney = kidney;
 data.kidney_mod = kidney_mod;
+data.oval_half = oval_half;
+data.circle_half = circle_half;
 
 end

@@ -27,31 +27,29 @@ I_tum_diff = imdiffusefilt(I_cont ,"GradientThreshold",5,"NumberOfIterations",5)
 
 %% 1.2. Canny-Kantendetektion --> zur Detektion der Niere, stark vereinfachtes Kantenbild
 BW_edge = edge(I_tum_diff, 'Canny',0.2,0.6);
-BW_edge_less = bwareaopen(BW_edge, 150); %hilfreich bei
+BW_edge_less = bwareaopen(BW_edge, 150); % hilfreich bei
 % Nierensegmentation, herausfiltern von kleinen Strukturen
 
-%% 1.3. Herausfiltern von langen vertikalen Strukturen
-% Nach Kantendetektion und eventuellem bwareaopen
-% Ausgangsbild: BW (dein Kantenbild nach Canny + bwareaopen)
-CC = bwconncomp(BW_edge_less);
-stats = regionprops(CC, 'Area', 'BoundingBox');
+%% 1.3. Herausfiltern von länglichen Strukturen
+CC = bwconncomp(BW_edge_less); %% struct mit allen connected components
+stats = regionprops(CC, 'Area', 'BoundingBox'); % eigenschaften der CC, viele mögliche Eingaben
 
-% Parameter: was gilt als "gute" Struktur
-minAR = 0.5;         % Mindest-Seitenverhältnis Höhe/Breite
-maxAR = 2 ;         % Maximal-Seitenverhältnis
+% Parameter: möglichst keine länglichen Strukturen
+min_ratio = 0.5;         % Mindest-Seitenverhältnis Höhe/Breite
+max_ratio = 2 ;         % Maximal-Seitenverhältnis
 
 % Leeres Bild für die besten Strukturen
 BW_best = zeros(size(BW_edge_less));
 
-for i = 1:length(stats)
+for i = 1:length(stats) % Schleife über alle detektierten CC´s
     area = stats(i).Area;
     bbox = stats(i).BoundingBox;
     width = bbox(3);
     height = bbox(4);
-    aspectRatio = height / width;
+    ratio = height / width;
 
-    if aspectRatio >= minAR && aspectRatio <= maxAR
-       BW_best(CC.PixelIdxList{i}) = true;
+    if ratio >= min_ratio && ratio <= max_ratio
+       BW_best(CC.PixelIdxList{i}) = 1; % wenn Bedingung erfüllt --> Struktur wird beibehalten
     end
 end
 
@@ -95,6 +93,8 @@ circle_edge = edge(data.circle, 'Canny');
 oval_edge = edge(data.oval, 'Canny');
 kidney_edge = edge(data.kidney, 'Canny');
 kidney_mod_edge = edge(data.kidney_mod, 'Canny');
+circle_half_edge = edge(data.circle_half, 'Canny');
+oval_half_edge = edge(data.oval_half, 'Canny');
 
 %% 4. Canny-Kantendetektion der Masken (für späteren Vergleich)
 mask_edge = edge(data.mask_kid_interp, "Canny");
@@ -108,10 +108,13 @@ result.BW_best = BW_best;
 result.case_id = case_id;
 
 % Niere
+result.I_kid = I_kid; 
 result.kidney_edge = kidney_edge;
 result.kidney_mod_edge = kidney_mod_edge;
 result.circle_edge = circle_edge;
 result.oval_edge = oval_edge;
+result.oval_half_edge = oval_half_edge;
+result.circle_half_edge = circle_half_edge;
 result.mask_kid_r = data.mask_kid_r;
 result.mask_kid_l = data.mask_kid_l;
 result.mask_edge = mask_edge;
