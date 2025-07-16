@@ -1,5 +1,5 @@
 tic
-case_id = 3;
+case_id = 183;
 data = loadCaseData_i(case_id);
 result = EdgeDetection(case_id);
 
@@ -18,17 +18,17 @@ reference_kidney_mod = result.kidney_mod_edge;
 figure;
 
 % Form 1
-[target_marked_c, reference_marked_c, ~, ~, ~, scale_c, score_c] = find_object(target_canny_diff, reference_circle);
+[target_marked_c, reference_marked_c, ~, ~, ~, scale_c, score_c] = find_DTobject(target_canny_diff, reference_circle);
 subplot(2,4,1); imshow(target_marked_c); title(sprintf('Circle \nScore: %.2f, \nScale: %.2f', score_c, scale_c));
 subplot(2,4,5); imshow(reference_marked_c); title('Ref: Circle');
 
 % Form 2
-[target_marked_k, reference_marked_k, XBest,YBest, scale_k, score_k] = find_object(target_canny_diff, reference_kidney);
+[target_marked_k, reference_marked_k, XBest,YBest, scale_k, score_k] = find_DTobject(target_canny_diff, reference_kidney);
 subplot(2,4,2); imshow(target_marked_k); title(sprintf('Kidney \nScore: %.2f, \nScale: %.2f', score_k, scale_k));
 subplot(2,4,6); imshow(reference_marked_k); title('Ref: Kidney');
 
 % Form 3 
-[target_marked_km, reference_marked_km, ~, ~, ~, scale_km, score_km] = find_object(target_canny_diff, reference_kidney_mod);
+[target_marked_km, reference_marked_km, ~, ~, ~, scale_km, score_km] = find_DTobject(target_canny_diff, reference_kidney_mod);
 subplot(2,4,3); imshow(target_marked_km); title(sprintf('Kidney Mod \nScore: %.2f, \nScale: %.2f', score_km, scale_km));
 subplot(2,4,7); imshow(reference_marked_km); title('Ref: Kidney Mod');
 

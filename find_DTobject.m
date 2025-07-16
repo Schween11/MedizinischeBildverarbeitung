@@ -1,4 +1,4 @@
-function [target_marked,reference_marked,YBest,XBest,ang,scale,score,acc]= find_object(target, reference);
+function [target_marked,reference_marked,YBest,XBest,ang,scale,score,acc]= find_DTobject(target, reference);
 %{
 
 DESCRIPTION:
@@ -67,7 +67,7 @@ for flip = 0:1
     scale = best_scale;
     
 % --- Mark the results in the original image ------------------------------
-if score>lowest_score % if score of best match is good enough
+if current_score > lowest_score && ~isnan(x) && ~isnan(y) %% hier unterschied zu find object
         
     % rotate and scale reference according to best match
     result_ref = imresize(rotate_binary_edge_image(reference,ang), scale);
