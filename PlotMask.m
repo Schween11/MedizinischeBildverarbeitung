@@ -1,4 +1,4 @@
-case_id = 63;
+case_id = 66;
 data = loadCaseData_i(case_id);
 
 % Nierenschnitt (aus Tabelle)
