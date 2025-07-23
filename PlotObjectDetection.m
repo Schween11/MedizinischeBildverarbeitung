@@ -1,4 +1,4 @@
-case_id = 33;
+case_id = 66;
 data = loadCaseData_i(case_id);
 result = EdgeDetection(case_id);
 target_canny_diff = result.BW_best;
@@ -13,9 +13,9 @@ reference_kidney_mod = result.kidney_mod_edge;
 
 figure;
 % Form 1 Kreis nur für tumor
-% [target_marked_cd, reference_marked_c,XBest_c ,YBest_c, ~, scale_c, score_c] = find_object(target_canny_diff, reference_circle);
-% subplot(2,4,1); imshow(target_marked_cd); title(sprintf('Circle \nScore: %.2f, \nScale: %.2f', score_c, scale_c));
-% subplot(2,4,5); imshow(reference_marked_c); title('Ref: Circle');
+ [target_marked_cd, reference_marked_c,XBest_c ,YBest_c, ~, scale_c, score_c] = find_object(target_canny_diff, reference_circle);
+ subplot(2,4,1); imshow(target_marked_cd); title(sprintf('Circle \nScore: %.2f, \nScale: %.2f', score_c, scale_c));
+ subplot(2,4,5); imshow(reference_marked_c); title('Ref: Circle');
 
 % Form 2 Kidney
 [target_marked_cd, reference_marked_k, XBest_k, YBest_k, ~, scale_k, score_k] = find_object(target_canny_diff, reference_kidney);

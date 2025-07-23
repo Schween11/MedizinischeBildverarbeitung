@@ -47,9 +47,16 @@ kmeans_mask_kidney = zeros(size(im_norm));
 kmeans_mask_kidney(roi_mask) = idx_k == chosen_cluster_kidney;
 
 % --- Startmaske Niere ---
-start_mask_kidney = imclose(kmeans_mask_kidney, strel('disk', 1));
-start_mask_kidney = imfill(start_mask_kidney, 'holes');
-start_mask_kidney = bwareaopen(start_mask_kidney, 300);
+mask_tmp = imclose(kmeans_mask_kidney, strel('disk', 3));       % Lücken schließen
+mask_tmp = imfill(mask_tmp, 'holes');                           % Löcher füllen
+mask_tmp = bwareaopen(mask_tmp, 300);                           % kleine Objekte entfernen
+
+% Neue Maske, nur größte zusammenhängende Fläche
+mask_main = bwareafilt(mask_tmp, 1);
+
+% Alle Löcher innerhalb dieser Struktur füllen
+start_mask_kidney = imfill(mask_main, 'holes');
+
 
 % --- Chan-Vese Niere ---
 mask_kidney = activecontour(im_norm, start_mask_kidney, opts.chanvese_iters_kidney, 'Chan-Vese');
@@ -106,10 +113,8 @@ else
     mask_tumor = false(size(im_norm));
 end
 
-% --- Plot optional ---
-if isfield(opts, 'plot') && opts.plot
-    plot_kidney_tumor_segmentation(im_norm, roi_mask, kmeans_mask_kidney, start_mask_kidney, mask_kidney, mask_tumor, doTumorSegmentation, opts.plotAll, opts.case_id);
-end
+plot_kidney_tumor_segmentation(im_norm, roi_mask, kmeans_mask_kidney, start_mask_kidney, mask_kidney, mask_tumor, doTumorSegmentation, opts.plotAll, opts.case_id);
+
 end
 
 % ===============================================

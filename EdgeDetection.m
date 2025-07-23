@@ -121,5 +121,5 @@ result.mask_edge = mask_edge;
 result.mask_tum_edge = mask_tum_edge;
 
 % Tumor
-
+result.I_tum = I_tum;
 end

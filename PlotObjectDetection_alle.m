@@ -9,7 +9,7 @@ case_ids = patients{valid_rows, 1};
 
 % === Initialisierung ===
 num_cases = length(case_ids);
-ref_names = { 'oval', 'kidney', 'kidney_mod'};
+ref_names = { 'circle', 'oval', 'kidney', 'kidney_mod'};
 
 best_targets = cell(num_cases, 1);
 best_refs = cell(num_cases, 1);
@@ -26,6 +26,7 @@ for idx = 1:num_cases
 
         % --- Lade Referenzformen ---
         references = struct( ...
+            'circle', result.circle_edge, ...
             'oval', result.oval_edge, ...
             'kidney', result.kidney_edge, ...
             'kidney_mod', result.kidney_mod_edge ...

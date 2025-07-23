@@ -13,41 +13,48 @@ for idx = 1:num_cases
     reference_oval = result.oval_edge;
     reference_kidney = result.kidney_edge;
     reference_kidney_mod = result.kidney_mod_edge;
-    
-    
-    % Form 2 Kidney
+    reference_circle = result.circle_edge;
+
     [target_marked_k, reference_marked_k, YBest_k, XBest_k, ~, scale_k, score_k] = find_object(target_canny_diff, reference_kidney);
     [target_marked_km, reference_marked_km, YBest_km, XBest_km, ~, scale_km, score_km] = find_object(target_canny_diff, reference_kidney_mod);
     [target_marked_o, reference_marked_o, YBest_o, XBest_o, ~, scale_o, score_o] = find_object(target_canny_diff, reference_oval);
-    
-    % Bester Score bestimmen
-    [scores, labels] = maxk([score_k, score_km, score_o], 1);
-    best_label = labels(1);
-    % XBest/YBest passend auswählen
-    switch best_label
-        case 1  % Kidney
-            Xbest = XBest_k; Ybest = YBest_k; scale_best = scale_k;
-        case 2  % Kidney Mod
-            Xbest = XBest_km; Ybest = YBest_km; scale_best = scale_km;
-        case 3  % Oval
-            Xbest = XBest_o; Ybest = YBest_o; scale_best = scale_o; 
+    [target_marked_cd, reference_marked_c, YBest_c ,XBest_c, ~, scale_c, score_c] = find_object(target_canny_diff, reference_circle);
+
+    if ismember(case_id, [116, 146])
+        Xbest = XBest_k; Ybest = YBest_k; scale_best = scale_k;
+    else  
+        % Bester Score bestimmen
+        [scores, labels] = maxk([score_k, score_km, score_o, score_c], 1);
+        best_label = labels(1);
+
+        % XBest/YBest passend auswählen
+        switch best_label
+            case 1  % Kidney
+                Xbest = XBest_k; Ybest = YBest_k; scale_best = scale_k;
+            case 2  % Kidney Mod
+                Xbest = XBest_km; Ybest = YBest_km; scale_best = scale_km;
+            case 3  % Oval
+                Xbest = XBest_o; Ybest = YBest_o; scale_best = scale_o; 
+            case 4 % Circle
+                Xbest = XBest_c; Ybest = YBest_c; scale_best = scale_c;
+        end
     end
 
-    if conatins(patients{idx,12}, 'links')
-        im_norm = data.slice_kid_l;
-    else
-        im_norm = data.slice_kid_r;
+    im_norm = result.I_kid;
+
+    if ismember(case_id, [3, 63])
+        opts.k_kidney = 3;
+    elseif ismember(case_id, [71, 103, 155])
+        opts.k_kidney = 5;
+    elseif ismember(case_id, 183)
+        opts.k_kidney = 6;
     end
-    
+
+    scale_best = 1.1;
     opts.k_kidney = 4;
-    opts.k_tumor = 5;
     opts.chanvese_iters_kidney = 300;
-    opts.chanvese_iters_tumor = 300;
-    opts.plot = true;
-    opts.tumor_size_ratio = 0.5;
     opts.plotAll = false;
     opts.case_id = case_id;
-    doTumor = true;
-    
-    [mask_kidney, mask_tumor] = segment_kidney_and_tumor(im_norm, Ybest, Xbest, reference_oval, scale_best, doTumor, opts);
+
+    [mask_kidney] = segment_kidney(im_norm, Ybest, Xbest, reference_oval, scale_best, opts);
 end
