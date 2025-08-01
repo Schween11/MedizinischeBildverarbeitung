@@ -1,11 +1,21 @@
-case_id = 71;
-tic
+case_id = 158;
 result = EdgeDetection(case_id);
 
-%% Vergleich anzeigen
+% Plot-Vergleich für beide Seiten: rechts (r) und links (l)
 figure;
-subplot(2,2,1); imshow(result.BW_best); title('Diffusion + Canny'); 
-subplot(2,2,3); imshow(result.mask_edge); title('Kantenbild MAske ')
-subplot(2,2,4); imshow(result.mask_tum_edge); title('Lantenbild Tumor')
 
-toc
+% Rechter Slice – Nierenkante
+subplot(2,3,1);
+imshow(result.BW_best_r);
+title('rechts: Diffusion + Canny');
+
+% Linker Slice – Nierenkante
+subplot(2,3,2);
+imshow(result.BW_best_l);
+title('links: Diffusion + Canny');
+
+% Maske Kantenbild – Vergleichsbild
+subplot(2,3,4);
+imshow(result.mask_edge);
+title('Maske Niere');
+

@@ -1,6 +1,6 @@
 function [target_marked,reference_marked,YBest,XBest,ang,scale,score,acc]= find_tumor(target, reference);
 
-% adaptierte Funktion für Tumorerkennung
+% adaptierte Funktion zur Anwendung der GHT für Tumorerkennung
 
 % --- Initialization ------------------------------------------------------
 lowest_score = 0; % define lowest score
@@ -10,13 +10,13 @@ XBest = 0;
        
 for ang = 0:30:360 % rotate image
         rot_reference = rotate_binary_edge_image(reference,ang);
-        for scale = 1:0.1:1.5 % scale image
+        for scale = 1:0.1:1.7 % scale image
             scaled_reference = imresize(rot_reference, scale);
             
             ref = int64(size(scaled_reference)/2); % define reference point as middle point of the scaled and rotated reference
             refY = ref(1);
             refX = ref(2);
-            [current_score,y,x,acc] = DTgeneralized_hough_transform(target, scaled_reference, refY, refX); % call GHT with the modified reference        
+            [current_score,y,x,acc] = generalized_hough_transform(target, scaled_reference, refY, refX); % call GHT with the modified reference        
             if current_score > score % compare result to previuous results
                   % save results and settings
                   score = current_score;

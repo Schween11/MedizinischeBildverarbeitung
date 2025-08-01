@@ -9,7 +9,7 @@ for idx = 1:num_cases
     case_id = case_ids(idx);
     data = loadCaseData_i(case_id);
     result = EdgeDetection(case_id);
-    target_canny_diff = result.BW_best;
+    target_canny_diff = result.BW_best_l; %links oder rechts auswählen
     reference_oval = result.oval_edge;
     reference_kidney = result.kidney_edge;
     reference_kidney_mod = result.kidney_mod_edge;
@@ -40,8 +40,6 @@ for idx = 1:num_cases
         end
     end
 
-    im_norm = result.I_kid;
-
     if ismember(case_id, [3, 63])
         opts.k_kidney = 3;
     elseif ismember(case_id, [71, 103, 155])
@@ -55,6 +53,11 @@ for idx = 1:num_cases
     opts.chanvese_iters_kidney = 300;
     opts.plotAll = false;
     opts.case_id = case_id;
+
+%im_norm = data.slice_tum_r; % Auswahl Tumorschicht oder Nierenschicht, rechts/links
+%im_norm = data.slice_tum_l;
+%im_norm = data.slice_kid_r;
+im_norm = data.slice_kid_l;
 
     [mask_kidney] = segment_kidney(im_norm, Ybest, Xbest, reference_oval, scale_best, opts);
 end

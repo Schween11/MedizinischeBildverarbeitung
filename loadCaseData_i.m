@@ -1,6 +1,6 @@
 function data = loadCaseData_i(case_id) 
 
-%% Einlesen der Daten
+%% 1. Einlesen der Daten
 
 % Formatierung der Case-ID 
 case_str = sprintf('%05d', case_id);
@@ -10,7 +10,7 @@ tbl = readtable('patients_25.xlsx', 'VariableNamingRule', 'preserve');
 row = tbl{:, 1} == case_id;
 
 % Wichtige Parameter aus Tabelle holen
-x_slice_kidney = tbl{row, 9};              % Koronarer X-Schnitt (sagittal)
+x_slice_kidney = tbl{row, 9};      % Koronarer X-Schnitt (sagittal)
 z_start = tbl{row, 10};            % Start-Z
 z_end   = tbl{row, 11};            % End-Z
 location_str = string(tbl{row, 12});
@@ -38,11 +38,6 @@ seg_vol_tumor = niftiread(seg_path) == 2;
 
 mask_vol = niftiread(seg_path); % Multilabel-Maske: 0 = Hintergrund, 1 = Niere, 2 = Tumor
 
-%% Durch die Slices nur den Tumor anschauen
-%seg_vol_tum = mask_vol == 2;
-%imshow3D(permute(seg_vol_tum, [1 3 2]))
-
-
 % Pixelgrößen aus Nifti-Dateien holen (wichtig für spätere Interpolation)
 info = niftiinfo(im_path);
 spacing = info.PixelDimensions;  % [Z, X, Y]
@@ -50,19 +45,11 @@ pixZ = spacing(1);               % Schichtdicke (oben–unten)
 pixX = spacing(2);               % links–rechts
 pixY = spacing(3);               % vorne–hinten
 
-%% Vorverarbeitung der Daten 
+%% optional: interaktive Darstellung der Slices
+% seg_vol_tum = mask_vol == 1;
+% imshow3D(permute(seg_vol_tum, [1 3 2]))
 
-% Field-of-View auf Z-Achse beschränken (in Tabelle vorgegeben)
-z_fov = z_start:z_end;
-im_fov = im_vol(z_fov, :, :);
-seg_fov = seg_vol(z_fov, :, :);
-seg_fov_tumor = seg_vol_tumor(z_fov, :, :);
-
-% Werte normalisieren auf [0,1]
-mn = min(im_fov, [], 'all');
-mx = max(im_fov, [], 'all');
-ImNorm = (im_fov - mn) ./ (mx - mn);
-
+%% 2. Vorverarbeitung der Daten
 
 % Koronalen Schnitt extrahieren (XSlice aus Tabelle)
 slice_cor_all  = squeeze(im_vol(:, x_slice_kidney, :));
@@ -94,18 +81,18 @@ mask_kid_tumor_interp = mask_kid_interp_1 == 2; % Tumor
 nz = size(slice_kid_interp, 2);
 midZ = round(nz / 2);
 
-slice_kid_r = slice_kid_interp(:, 1:midZ);
-mask_kid_r = mask_kid_interp(:, 1:midZ);
-mask_kid_tumor_r  = mask_kid_tumor_interp(:, 1:midZ);
+slice_kid_r = slice_kid_interp(:,50:midZ);
+mask_kid_r = mask_kid_interp(:,50:midZ);
+mask_kid_tumor_r  = mask_kid_tumor_interp(:, 50:midZ);
 
-slice_kid_l = slice_kid_interp(:, midZ+1:end);
-mask_kid_l  = mask_kid_interp(:, midZ+1:end);
-mask_kid_tumor_l  = mask_kid_tumor_interp(:, midZ+1:end);
+slice_kid_l = slice_kid_interp(:, midZ+1:end-50);
+mask_kid_l  = mask_kid_interp(:, midZ+1:end-50);
+mask_kid_tumor_l  = mask_kid_tumor_interp(:, midZ+1:end-50);
 
-%% Selbe Vorverarbeitung für Slice mit größtem Tumorquerschnitt
+%% 3. Selbe Vorverarbeitung für den Slice mit dem größtem Tumorquerschnitt
 % evtl. in Funktion Auslagern
 % Slice mit größter Tumorfläche suchen
-[max_area, x_slice_tumor] = max(squeeze(sum(sum(mask_vol == 2, 1), 3)));
+[~, x_slice_tumor] = max(squeeze(sum(sum(mask_vol == 2, 1), 3)));
 
 slice_tum = squeeze(im_vol(:, x_slice_tumor, :));
 mask_tum = squeeze(mask_vol(:, x_slice_tumor, :));
@@ -122,7 +109,8 @@ mask_tum_tumor_interp = imresize(mask_tum_fov == 2, [newZ_tum size(mask_tum_fov,
 nz_tum = size(slice_tum_tumor_interp, 2);
 midZ_tum = round(nz_tum / 2);
 
-%% Daten als Struktur speichern
+%% 4. Daten als Struktur speichern
+data.x_slice_kidney = x_slice_kidney;
 data = struct();
 data.midZ = midZ_tum;
 data.tbl = tbl;

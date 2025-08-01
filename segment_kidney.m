@@ -59,7 +59,7 @@ dists_norm = (dists - min(dists)) / (max(dists) - min(dists) + eps);
 counts_norm = (cluster_counts - min(cluster_counts)) / (max(cluster_counts) - min(cluster_counts) + eps);
 
 % --- Gewichtete Kombi-Metrik: Nähe GHT (0.7), Fläche (0.3) ---
-score = -0.75 * (1 - dists_norm) + 0.25 * counts_norm;
+score = -0.85 * (1 - dists_norm) + 0.15 * counts_norm;
 
 % --- Cluster mit bestem Score wählen ---
 [~, chosen_cluster_kidney] = max(score);

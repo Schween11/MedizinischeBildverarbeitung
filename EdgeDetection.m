@@ -5,56 +5,51 @@ function result = EdgeDetection(case_id);
 %% 0. Aufrufen der vorverarbeiteten Daten im Struct
 data = loadCaseData_i(case_id); 
 
-%% 1. Kantendetektion für Nierenlokalisation
+%% 1. Kantendetektion für Nierenlokalisation – beide Seiten
+% Bilddaten für beide Seiten
+I_kid_r = data.slice_kid_r;
+I_kid_l = data.slice_kid_l;
 
-% Auswahl der pathologische Seite 
-location_str = string(data.tbl{data.row,12});
-first_word = extractBefore(location_str, ',');
+% Leere Strukturen für Ergebnisse
+sides = {'r', 'l'};  % rechts, links
+for s = 1:2
+    side = sides{s};
+    I_kid = eval(['I_kid_', side]);  % Zugriff auf das jeweilige Bild
 
-if first_word == "rechts"
-    I_kid = data.slice_kid_r;
-else 
-    I_kid = data.slice_kid_l;
-end
+    % 1.1. Vorverarbeitung
+    I_cont = adapthisteq(I_kid, 'NumTiles', [8 8], 'ClipLimit', 0.005);
+    I_cont2 = imadjust(I_kid, [0.3 0.8]);
+    I_tum_diff = imdiffusefilt(I_cont2, "GradientThreshold", 3, "NumberOfIterations", 3);
 
-%% 1.1. Vorverarbeitungsschritte 
+    % 1.2. Canny-Kanten + kleine Objekte entfernen
+    BW_edge = edge(I_tum_diff, 'Canny', 0.2, 0.6);
+    BW_edge_less = bwareaopen(BW_edge, 100);
+    
+    % 1.3. Herausfiltern von länglichen Strukturen
+    CC = bwconncomp(BW_edge_less);
+    stats = regionprops(CC, 'BoundingBox');
 
-% sehr leichte Kontrastverstärkung
-I_cont = adapthisteq(I_kid, 'NumTiles', [8 8], 'ClipLimit', 0.005);
+    min_ratio = 0.5;
+    max_ratio = 2;
+    BW_best = zeros(size(BW_edge_less));
 
-% Anisotroper Diffusionsfilter (anisotrope Glättung)
-I_tum_diff = imdiffusefilt(I_cont ,"GradientThreshold",5,"NumberOfIterations",5);
-
-%% 1.2. Canny-Kantendetektion --> zur Detektion der Niere, stark vereinfachtes Kantenbild
-BW_edge = edge(I_tum_diff, 'Canny',0.2,0.6);
-BW_edge_less = bwareaopen(BW_edge, 150); % hilfreich bei
-% Nierensegmentation, herausfiltern von kleinen Strukturen
-
-%% 1.3. Herausfiltern von länglichen Strukturen
-CC = bwconncomp(BW_edge_less); %% struct mit allen connected components
-stats = regionprops(CC, 'Area', 'BoundingBox'); % eigenschaften der CC, viele mögliche Eingaben
-
-% Parameter: möglichst keine länglichen Strukturen
-min_ratio = 0.5;         % Mindest-Seitenverhältnis Höhe/Breite
-max_ratio = 2 ;         % Maximal-Seitenverhältnis
-
-% Leeres Bild für die besten Strukturen
-BW_best = zeros(size(BW_edge_less));
-
-for i = 1:length(stats) % Schleife über alle detektierten CC´s
-    area = stats(i).Area;
-    bbox = stats(i).BoundingBox;
-    width = bbox(3);
-    height = bbox(4);
-    ratio = height / width;
-
-    if ratio >= min_ratio && ratio <= max_ratio
-       BW_best(CC.PixelIdxList{i}) = 1; % wenn Bedingung erfüllt --> Struktur wird beibehalten
+    for i = 1:length(stats)
+        bbox = stats(i).BoundingBox;
+        width = bbox(3);
+        height = bbox(4);
+        ratio = height / width;
+        if ratio >= min_ratio && ratio <= max_ratio
+            BW_best(CC.PixelIdxList{i}) = 1;
+        end
     end
+
+    % Speicherung für die jeweilige Seite
+    result.(['BW_best_' side]) = BW_best; % vereinfachtes Kantenbild links und rechts
+    result.(['I_kid_' side]) = I_kid; % unverarbeitetes Bild
 end
 
  
-%% Bounding-Boxes anzeigen 
+%% optional: Bounding-Boxes anzeigen 
 % figure; imshow(BW_edge_less); hold on;
 % 
 % % Alle Bounding Boxes zeichnen
@@ -65,28 +60,8 @@ end
 % 
 % title('Alle Bounding Boxes');
 
-%% 1.4. Canny-Kantendetektion der Masken (für späteren Vergleich)
-mask_edge = edge(data.mask_kid_interp, "Canny");
-mask_tum_edge = edge(data.mask_kid_tumor_interp,"Canny");
-
 %% 2. Kantendetektion für Tumorlokalisation
-
-% Auswahl der pathologische Seite 
-location_str = string(data.tbl{data.row,12});
-first_word = extractBefore(location_str, ',');
-
-if first_word == "rechts"
-    I_tum = data.slice_tum_r;
-else 
-    I_tum = data.slice_tum_l;
-end
-
-% Adaptive Histogramm-Angleichung (Kontrastverstärkung)
-I_tum_cont = adapthisteq(I_tum, 'NumTiles', [8 8], 'ClipLimit', 0.04);
-
-% analog zu Nierenlokalisation (andere Parameter)
-I_tum_diff = imdiffusefilt(I_tum_cont ,"GradientThreshold",3,"NumberOfIterations",3);
-I_tum_edge = edge(I_tum_diff, 'Canny',0.3,0.7);
+% optional hier eine Kantendetektion in der Tumor-Slice implementieren
 
 %% 3. Canny-Kantendetektion der Shapes (für find_object Funktion)
 circle_edge = edge(data.circle, 'Canny');
@@ -102,13 +77,7 @@ mask_tum_edge = edge(data.mask_kid_tumor_interp,"Canny");
 
 
 %% Ausgabe als Struktur speichern
-result = struct();
-result.BW_edge_less = BW_edge_less;
-result.BW_best = BW_best;
-result.case_id = case_id;
 
-% Niere
-result.I_kid = I_kid; 
 result.kidney_edge = kidney_edge;
 result.kidney_mod_edge = kidney_mod_edge;
 result.circle_edge = circle_edge;
@@ -120,6 +89,5 @@ result.mask_kid_l = data.mask_kid_l;
 result.mask_edge = mask_edge;
 result.mask_tum_edge = mask_tum_edge;
 
-% Tumor
-result.I_tum = I_tum;
+
 end

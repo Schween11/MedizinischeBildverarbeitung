@@ -1,58 +1,78 @@
-case_id = 66;
+%% Einlesen der nötigen Daten
+case_id = 33;
 data = loadCaseData_i(case_id);
 result = EdgeDetection(case_id);
-target_canny_diff = result.BW_best;
-% target_canny_bilat = result.BW_bilat;
-% target_fuzzy_bilat = result.fuzzy_bil_thin;
-% target_fuzzy_diff = result.fuzzy_diff_thin;
-% reference_circle = result.circle_edge;
-reference_oval = result.oval_edge;
-reference_kidney = result.kidney_edge;
-reference_kidney_mod = result.kidney_mod_edge;
 
+% Zielkantenbilder (Target)
+target_edges = {result.BW_best_l, result.BW_best_r};
+target_labels = {'links', 'rechts'};
+
+% Referenzen
+references = {
+    result.kidney_edge, 'Kidney';
+    result.kidney_mod_edge, 'Kidney Mod';
+    result.oval_edge, "Oval"};
+
+% Ergebnisse speichern
+Xbest_all = zeros(1,2);
+Ybest_all = zeros(1,2);
+best_label_all = zeros(1,2);
+scale_best_all = zeros(1,2);
+score_best_all = zeros(1,2);
 
 figure;
-% Form 1 Kreis nur für tumor
- [target_marked_cd, reference_marked_c,XBest_c ,YBest_c, ~, scale_c, score_c] = find_object(target_canny_diff, reference_circle);
- subplot(2,4,1); imshow(target_marked_cd); title(sprintf('Circle \nScore: %.2f, \nScale: %.2f', score_c, scale_c));
- subplot(2,4,5); imshow(reference_marked_c); title('Ref: Circle');
 
-% Form 2 Kidney
-[target_marked_cd, reference_marked_k, XBest_k, YBest_k, ~, scale_k, score_k] = find_object(target_canny_diff, reference_kidney);
-subplot(2,3,1); imshow(target_marked_cd); title(sprintf('Kidney \nScore: %.2f, \nScale: %.2f', score_k, scale_k));
-subplot(2,3,4); imshow(reference_marked_k); title('Ref: Kidney');
+for side = 1:2  % 1 = links, 2 = rechts
+    target = target_edges{side};
+    
+    scores = zeros(1,3);
+    scales = zeros(1,3);
+    Xbests = zeros(1,3);
+    Ybests = zeros(1,3);
+    target_marked_all = cell(1,3);
+    reference_marked_all = cell(1,3);
 
-% Form 3 Kidney mod
-[target_marked_cd, reference_marked_km, XBest_km, YBest_km, ~, scale_km, score_km] = find_object(target_canny_diff, reference_kidney_mod);
-subplot(2,3,2); imshow(target_marked_cd); title(sprintf('Kidney Mod \nScore: %.2f, \nScale: %.2f', score_km, scale_km));
-subplot(2,3,5); imshow(reference_marked_km); title('Ref: Kidney Mod');
+    % Vergleiche alle Referenzen
+    for i = 1:3
+        ref = references{i,1};
+        [t_marked, r_marked, X, Y, ~, scale, score] = find_object(target, ref);
 
-% Form 4 Oval
-[target_marked_cd, reference_marked_o, XBest_o, YBest_o, ~, scale_o, score_o] = find_object(target_canny_diff, reference_oval);
-subplot(2,3,3); imshow(target_marked_cd); title(sprintf('Oval \nScore: %.2f, \nScale: %.2f', score_o, scale_o));
-subplot(2,3,6); imshow(reference_marked_o); title('Ref: Oval');
+        scores(i) = score;
+        scales(i) = scale;
+        Xbests(i) = X;
+        Ybests(i) = Y;
+        target_marked_all{i} = t_marked;
+        reference_marked_all{i} = r_marked;
 
-% Bester Score bestimmen
-[scores, labels] = maxk([score_k, score_km, score_o], 1);
-best_label = labels(1);
-% XBest/YBest passend auswählen
-switch best_label
-    case 1  % Kidney
-        Xbest = XBest_k; Ybest = YBest_k; scale_best = scale_k;
-    case 2  % Kidney Mod
-        Xbest = XBest_km; Ybest = YBest_km; scale_best = scale_km;
-    case 3  % Oval
-        Xbest = XBest_o; Ybest = YBest_o; scale_best = scale_o; 
+        % Subplots: Zeile 1 = Target, Zeile 2 = Reference
+        subplot(2, 6, i + (side-1)*3);
+        imshow(t_marked);
+        title(sprintf('%s: %s\nScore: %.2f, Scale: %.2f', ...
+            target_labels{side}, references{i,2}, score, scale));
+
+        subplot(2, 6, i + 6 + (side-1)*3);
+        imshow(r_marked);
+        title(sprintf('Ref: %s', references{i,2}));
+    end
+
+    % Bester Treffer ermitteln
+    [~, best_label] = max(scores);
+    best_label_all(side) = best_label;
+    Xbest_all(side) = Xbests(best_label);
+    Ybest_all(side) = Ybests(best_label);
+    scale_best_all(side) = scales(best_label);
+    score_best_all(side) = scores(best_label);
+
+    % Markierung im besten Target-Bild
+    subplot(2, 6, best_label + (side-1)*3);
+    hold on;
+    plot(Ybests(best_label), Xbests(best_label), 'rx', 'MarkerSize', 12, 'LineWidth', 2);
+    viscircles([Ybests(best_label), Xbests(best_label)], 5, 'Color', 'r', 'LineStyle', '--', 'LineWidth', 1);
+    text(Ybests(best_label)+5, Xbests(best_label), ...
+        sprintf('(%d,%d)', Ybests(best_label), Xbests(best_label)), ...
+        'Color', 'red', 'FontWeight', 'bold');
 end
-% Gesamt-Titel
-sgtitle(sprintf('Beste Matches bei Case %d – Diffusion + Canny\nBester Score bei (%d, %d)', ...
-    case_id, Xbest, Ybest), 'FontSize', 14, 'FontWeight', 'bold');
-% Figur bleibt aktiv
-subplot(2,3,best_label);  % Das Subplot mit dem besten Match aktivieren
-hold on;
-% Kreuz an (XBest, YBest)
-plot(Ybest, Xbest, 'rx', 'MarkerSize', 12, 'LineWidth', 2);
-% Optional: kleiner Kreis um die Stelle
-viscircles([Ybest, Xbest], 5, 'Color', 'r', 'LineStyle', '--', 'LineWidth', 1);
-% Info als Text ins Bild schreiben
-text(Ybest + 5, Xbest, sprintf('(%d,%d)', Ybest, Xbest), 'Color', 'red', 'FontWeight', 'bold'); %Y dann X von reihenfolge her
+
+% Gesamttitel
+sgtitle(sprintf('Case %d: GHT-basierter Vergleich für links und rechts', case_id), ...
+    'FontSize', 14, 'FontWeight', 'bold');

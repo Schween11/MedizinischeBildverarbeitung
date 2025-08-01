@@ -1,6 +1,9 @@
-case_id = 140;
-data = loadCaseData_i(case_id);
+function data = PlotMask(case_id);
 
+%% Aufrufen der vorverarbeiteten Daten im Struct
+data = loadCaseData_i(case_id); 
+
+%% Plot
 % Nierenschnitt (aus Tabelle)
 subplot(2,2,1);
 imshow(data.slice_kid_interp); hold on;
@@ -10,7 +13,7 @@ maske = imshow(redOverlay);
 set(maske, 'AlphaData', 0.3 * data.mask_kid_interp);
 maske_tum = imshow(greenOverlay);
 set(maske_tum, 'AlphaData', 0.3 * data.mask_kid_tumor_interp);
-title(sprintf('\\bfNiere (X = %d)', data.x_slice_kidney));
+title(sprintf('\\bfNiereMax (X = %d)', data.x_slice_kidney));
 axis off;
 
 % Rechte Hälfte (Niere)
@@ -22,7 +25,7 @@ maske_links = imshow(redOverlayL);
 set(maske_links, 'AlphaData', 0.3 * data.mask_kid_l);
 maske_tum_links = imshow(greenOverlayL);
 set(maske_tum_links, 'AlphaData', 0.3 * data.mask_kid_tumor_l);
-title('\bfNiere links (Z-min bis Mitte)');
+title('FOV Niere links');
 axis off;
 
 % Linke Hälfte (Niere)
@@ -34,7 +37,7 @@ maske_rechts = imshow(redOverlayR);
 set(maske_rechts, 'AlphaData', 0.3 * data.mask_kid_r);
 maske_tum_rechts = imshow(greenOverlayR);
 set(maske_tum_rechts, 'AlphaData', 0.3 * data.mask_kid_tumor_r);
-title('\bfNiere rechts (Mitte bis Z-max)');
+title('\bf FOV Niere rechts');
 axis off;
 
 % Tumor-Schnitt separat darstellen
@@ -43,5 +46,7 @@ imshow(data.slice_tum_tumor_interp); hold on;
 greenOverlay = cat(3, zeros(size(data.mask_tum_tumor_interp)), ones(size(data.mask_tum_tumor_interp)), zeros(size(data.mask_tum_tumor_interp)));
 tum_overlay = imshow(greenOverlay);
 set(tum_overlay, 'AlphaData', 0.3 * data.mask_tum_tumor_interp);
-title(sprintf('\\bfTumor-Slice (X = %d)', data.x_slice_tumor));
+title(sprintf('\\bfTumorMax (X = %d)', data.x_slice_tumor));
 axis off;
+
+end

@@ -22,7 +22,7 @@ for idx = 1:num_cases
     try
         % --- Lade Bilddaten ---
         result = EdgeDetection(case_id);
-        target = result.BW_best;
+        target = result.BW_best_r; %links oder rechts angeben
 
         % --- Lade Referenzformen ---
         references = struct( ...
