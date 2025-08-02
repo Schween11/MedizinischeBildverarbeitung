@@ -1,57 +1,86 @@
-tic
+function [mask_kidney_3D, Xbest, Ybest, score_best] = PlotSegmentation3D(case_id, side, doPlot)
 
-% === Daten aus Excel einlesen und aus caseData laden ===
-case_id = 33;
-data = loadCaseData_i(case_id);
-result = EdgeDetection(case_id);
+%{
 
-target_canny_diff = result.BW_best_r;
-reference_oval = result.oval_edge;
-reference_kidney = result.kidney_edge;
-reference_kidney_mod = result.kidney_mod_edge;
-reference_circle = result.circle_edge;
+ Führt 3D-Nierensegmentierung durch auf Basis GHT + Chan-Vese + Slice Propagation
 
-% Form 2 Kidney
-[target_marked_k, reference_marked_k, YBest_k, XBest_k, ~, scale_k, score_k] = find_object(target_canny_diff, reference_kidney);
-[target_marked_km, reference_marked_km, YBest_km, XBest_km, ~, scale_km, score_km] = find_object(target_canny_diff, reference_kidney_mod);
-[target_marked_o, reference_marked_o, YBest_o, XBest_o, ~, scale_o, score_o] = find_object(target_canny_diff, reference_oval);
-[target_marked_cd, reference_marked_c, YBest_c ,XBest_c, ~, scale_c, score_c] = find_object(target_canny_diff, reference_circle);
+ INPUT:
+   - case_id : Fall-ID
+   - side    : 'l' oder 'r' (linke oder rechte Niere)
+   - doPlot  : true/false - gibt an, ob eine Visualisierung erfolgen soll
 
-% Bester Score bestimmen
-if ismember(case_id, [116, 146])
-    Xbest = XBest_k;
-    Ybest = YBest_k;
-    scale_best = 1.2;
-else  
-    [scores, labels] = maxk([score_k, score_km, score_o, score_c], 1);
-    best_label = labels(1);
+ OUTPUT:
+   - mask_kidney_3D : 3D-Nierenmaske
+   - Xbest, Ybest   : GHT-Zentrum
+   - score_best     : Score der besten Detektion
+%}
+    tic;
 
-    switch best_label
-        case 1  % Kidney
-            Xbest = XBest_k; Ybest = YBest_k; scale_best = scale_k;
-        case 2  % Kidney Mod
-            Xbest = XBest_km; Ybest = YBest_km; scale_best = scale_km;
-        case 3  % Oval
-            Xbest = XBest_o; Ybest = YBest_o; scale_best = scale_o; 
-        case 4  % Circle
-            Xbest = XBest_c; Ybest = YBest_c; scale_best = scale_c;
+    % === Daten laden ===
+    data = loadCaseData_i(case_id);
+    result = EdgeDetection(case_id);
+
+    % === Zielbild auswählen ===
+    switch side
+        case 'l'
+            target = result.BW_best_l;
+            vol_kidney = permute(data.im_vol_l, [1 3 2]);  % [H,W,Z]
+            slice_number = data.x_slice_kidney;
+        case 'r'
+            target = result.BW_best_r;
+            vol_kidney = permute(data.im_vol_r, [1 3 2]);  % [H,W,Z]
+            slice_number = data.x_slice_kidney;
+        otherwise
+            error("Ungültiger Seitenparameter: 'l' oder 'r' erwartet");
     end
+
+    % === Referenzformen ===
+    reference_oval = result.oval_edge;
+    reference_kidney = result.kidney_edge;
+    reference_kidney_mod = result.kidney_mod_edge;
+    reference_circle = result.circle_edge;
+
+    % === GHT mit mehreren Referenzformen ===
+    [~, ~, YBest_k, XBest_k, ~, scale_k, score_k] = find_object(target, reference_kidney);
+    [~, ~, YBest_km, XBest_km, ~, scale_km, score_km] = find_object(target, reference_kidney_mod);
+    [~, ~, YBest_o, XBest_o, ~, scale_o, score_o] = find_object(target, reference_oval);
+    [~, ~, YBest_c, XBest_c, ~, scale_c, score_c] = find_object(target, reference_circle);
+
+    % === Beste Detektion bestimmen ===
+    if ismember(case_id, [116, 146])
+        Xbest = XBest_k;
+        Ybest = YBest_k;
+        scale_best = 1.2;
+        score_best = score_k;
+    else
+        [scores, labels] = maxk([score_k, score_km, score_o, score_c], 1);
+        best_label = labels(1);
+        score_best = scores(1);
+
+        switch best_label
+            case 1
+                Xbest = XBest_k; Ybest = YBest_k; scale_best = scale_k;
+            case 2
+                Xbest = XBest_km; Ybest = YBest_km; scale_best = scale_km;
+            case 3
+                Xbest = XBest_o; Ybest = YBest_o; scale_best = scale_o;
+            case 4
+                Xbest = XBest_c; Ybest = YBest_c; scale_best = scale_c;
+        end
+    end
+
+    % === Startslice extrahieren ===
+    im_best = vol_kidney(:, :, slice_number);
+
+    % === Optionen setzen ===
+    opts.k_kidney = 2;
+    opts.chanvese_iters_kidney = 500;
+    opts.plotAll = doPlot;
+    opts.case_id = case_id;
+
+    % === 3D Segmentierung ausführen ===
+    mask_kidney_3D = segment_kidney_3D(vol_kidney, im_best, slice_number, Ybest, Xbest, reference_oval, scale_best, opts);
+
+    toc;
 end
 
-% Bildvolumen [H, Z, W] → umwandeln zu [H, W, Z]
-vol_kidney = permute(data.im_vol_r, [1 3 2]);  % [H, W, Z]
-slice_number = 280;
-
-% Das Startbild direkt aus dem permutierten Volumen entnehmen
-im_best = vol_kidney(:, :, slice_number);
-
-% Optionen für Segmentierung
-opts.k_kidney = 2;
-opts.chanvese_iters_kidney = 500;
-opts.plotAll = true;
-opts.case_id = case_id;
-
-% Aufruf der 3D-Segmentierung
-mask_kidney_3D = segment_kidney_3D(vol_kidney, im_best, slice_number, Ybest, Xbest, reference_oval, scale_best, opts);
-
-toc

@@ -1,5 +1,23 @@
+function PlotObjectDetection(case_id)
+
+%{
+BESCHREIBUNG:
+Visualisiert die Ergebnisse der Kantendetektion mithilfe der GHT für beide Nierenhälften eines
+gegebenen Falls. Es werden jeweils drei Referenzformen (Kidney, Kidney Mod,
+Oval) mit den Kantenbildern verglichen.
+
+INPUT:
+Fallnummer (case_id) als Zahl (z.B 3, 62, 141)
+
+OUTPUT:
+Zeigt eine Abbildung mit 12 Subplots:
+   - obere Reihe: Kantenbilder mit Overlay der Nierenlokalisation mit GHT
+   mit score und scaling
+    - untere Reihe: zugehörige Kantenbilder der Referenzen
+    - Markierung des besten Treffers mit einem roten Kreuz und einem Kreis
+%}
+
 %% Einlesen der nötigen Daten
-case_id = 33;
 data = loadCaseData_i(case_id);
 result = EdgeDetection(case_id);
 
@@ -76,3 +94,5 @@ end
 % Gesamttitel
 sgtitle(sprintf('Case %d: GHT-basierter Vergleich für links und rechts', case_id), ...
     'FontSize', 14, 'FontWeight', 'bold');
+
+end

@@ -1,6 +1,19 @@
-%% Funktionsdefinition mit Case-ID als Input
-
 function result = EdgeDetection(case_id);
+%{
+BESCHREIBUNG:
+Führt eine Kantendetektion zur Vorbereitung der GHT durch. Für beide vorverarbeiteten
+Nierenhälften aus loadCaseData_i sowie für die Referenzformen und die Masken .
+
+INPUT:
+Fallnummer (case_id) als Zahl (z.B 3, 62, 141)
+
+OUTPUT:
+Ein Struct (result) mit vorbereiteten Kantenbildern:
+- vereinfachte Kantenbilder der linken und rechten Niere 
+- zugehörige Originalbilder
+- Kantenbild der Referenzformen (Kreis, Oval, Niere, "modifizierte" Niere)
+- Kantenbild der segmentierten Nieren- und Tumormasken
+%}
 
 %% 0. Aufrufen der vorverarbeiteten Daten im Struct
 data = loadCaseData_i(case_id); 
@@ -16,14 +29,14 @@ for s = 1:2
     side = sides{s};
     I_kid = eval(['I_kid_', side]);  % Zugriff auf das jeweilige Bild
 
-    % 1.1. Vorverarbeitung
+    % 1.1. Kontrasterhöhung + Glättung
     I_cont = adapthisteq(I_kid, 'NumTiles', [8 8], 'ClipLimit', 0.005);
-    I_cont2 = imadjust(I_kid, [0.3 0.8]);
-    I_tum_diff = imdiffusefilt(I_cont2, "GradientThreshold", 3, "NumberOfIterations", 3);
+    %I_cont2 = imadjust(I_kid, [0.3 0.8]); %alternative Kontrasterhöhung
+    I_tum_diff = imdiffusefilt(I_cont, "GradientThreshold", 3, "NumberOfIterations", 3);
 
     % 1.2. Canny-Kanten + kleine Objekte entfernen
     BW_edge = edge(I_tum_diff, 'Canny', 0.2, 0.6);
-    BW_edge_less = bwareaopen(BW_edge, 100);
+    BW_edge_less = bwareaopen(BW_edge, 50);
     
     % 1.3. Herausfiltern von länglichen Strukturen
     CC = bwconncomp(BW_edge_less);

@@ -1,18 +1,31 @@
-function data = loadCaseData_i(case_id) 
+function data = loadCaseData_i(case_id)
+%{
 
-%% 1. Einlesen der Daten
+BESCHREIBUNG:
+Lädt Daten und Segmentierungen und vorverarbeitet diese für eine gegebene Fallnummer
 
-% Formatierung der Case-ID 
+INPUT: 
+Fallnummer (case_id) als Zahl (z.B 3, 62, 141)
+
+OUTPUT:
+Ein Struct (data) mit vorverarbeiteten Scan und Maskendaten für die
+angegebene Fallnummer. Enthält:
+%    - Segmentierungen (Niere, Tumor)
+%    - interpolierte 2D- und 3D- FOV Bildhälften (links/rechts)
+%    - Referenzformen für die GHT
+%    - relevante Parameter aus der Patiententabelle und dem Nifti Header
+%}
+
+%% 1. Vorbereitung der Daten
+
 case_str = sprintf('%05d', case_id);
-
-% Excel-Tabelle einlesen
 tbl = readtable('patients_25.xlsx', 'VariableNamingRule', 'preserve');
 row = tbl{:, 1} == case_id;
 
-% Wichtige Parameter aus Tabelle holen
-x_slice_kidney = tbl{row, 9};      % Koronarer X-Schnitt (sagittal)
-z_start = tbl{row, 10};            % Start-Z
-z_end   = tbl{row, 11};            % End-Z
+% Werte aus Tabelle
+x_slice_kidney = tbl{row, 9};      % Sagittaler X-Schnitt (für koronale Ansicht)
+z_start = tbl{row, 10};            % Start-Z (Slice-Begrenzung unten)
+z_end   = tbl{row, 11};            % End-Z (Slice-Begrenzung oben)
 location_str = string(tbl{row, 12});
 
 % Pfade definieren
@@ -23,142 +36,133 @@ seg_path  = fullfile(case_path, 'segmentation.nii.gz');
 shapes_path = 'shapes';
 
 % Referenzformen laden
+
+% Referenzen für Nierenlokalisation
 kidney      = rgb2gray(imread(fullfile(shapes_path, 'KidneyCoronal.png')));
 kidney_mod  = rgb2gray(imread(fullfile(shapes_path, 'KidneyCoronal_mod.png')));
 oval        = rgb2gray(imread(fullfile(shapes_path, 'Oval.png')));
 circle      = rgb2gray(imread(fullfile(shapes_path, 'Circle.png')));
+
+% Referenzen für Tumorlokalisation
 oval_half   = im2gray(imread(fullfile(shapes_path, 'Oval_half.png')));
 circle_half   = im2gray(imread(fullfile(shapes_path, 'Circle_half.png')));
 
-% CT-Scan und Maske einlesen (in Form von Nifti-Dateien)
-im_vol  = niftiread(im_path);      % Volumen: [Z, X, Y]
+%% 2. FOV-Extrahierung nur im koronalen Slice
 
-seg_vol = niftiread(seg_path) == 1; % Binärmaske
-seg_vol_tumor = niftiread(seg_path) == 2;
+% CT & Segmentierung laden
+im_vol = niftiread(im_path);
+mask_vol = niftiread(seg_path);
 
-mask_vol = niftiread(seg_path); % Multilabel-Maske: 0 = Hintergrund, 1 = Niere, 2 = Tumor
+% Nieren-/ Tumormasken
+mask_kidney = mask_vol == 1;
+mask_tumor  = mask_vol == 2;
 
-% Pixelgrößen aus Nifti-Dateien holen (wichtig für spätere Interpolation)
+% Voxelgröße
 info = niftiinfo(im_path);
-spacing = info.PixelDimensions;  % [Z, X, Y]
-pixZ = spacing(1);               % Schichtdicke (oben–unten)
-pixX = spacing(2);               % links–rechts
-pixY = spacing(3);               % vorne–hinten
+pixZ = info.PixelDimensions(1);
+pixX = info.PixelDimensions(2);
+pixY = info.PixelDimensions(3);
 
-%% optional: interaktive Darstellung der Slices
-% seg_vol_tum = mask_vol == 1;
-% imshow3D(permute(seg_vol_tum, [1 3 2]))
-
-%% 2. Vorverarbeitung der Daten
-
-% Koronalen Schnitt extrahieren (XSlice aus Tabelle)
-slice_cor_all  = squeeze(im_vol(:, x_slice_kidney, :));
-mask_cor_all  = squeeze(mask_vol(:, x_slice_kidney, :));
-
-% Field-of-View auf Z-Achse beschränken (in Tabelle vorgegeben)
+% Field-of-View im koronalen X-Slice extrahieren
+slice_cor = squeeze(im_vol(:, x_slice_kidney, :));        
+mask_cor  = squeeze(mask_vol(:, x_slice_kidney, :));       
 z_fov = z_start:z_end;
-im_fov = slice_cor_all(z_fov, :);
-mask_fov_all = mask_cor_all(z_fov, :);
-im_vol_fov = im_vol(z_fov, :, :);
+im_fov = slice_cor(z_fov, :);
+mask_fov = mask_cor(z_fov, :);
 
-% Werte normalisieren auf [0,1]
-mn = min(im_fov, [], 'all');
-mx = max(im_fov, [], 'all');
-Im_Norm = (im_fov- mn) ./ (mx - mn);
-mn3 = min(im_vol_fov, [], 'all');
-mx3 = max(im_vol_fov, [], 'all');
-Im_Norm3 = (im_vol_fov- mn3) ./ (mx3 - mn3);
+% Normalisierung
+Im_Norm = rescale(im_fov);  % Werte auf [0,1]
+scaling = pixZ / 1;         % Ziel: 1 mm Abstand
+newZ = round(size(Im_Norm,1) * scaling);
 
-% Auf 1mm-Z-Abstand interpolieren
-targetZ = 1; % 1mm Pixelabstand als Ziel
-scaling = pixZ / targetZ;
-newZ   = round(size(Im_Norm,1) * scaling);
+% Interpolation
+slice_kid_interp = imresize(Im_Norm, [newZ, size(Im_Norm,2)]);
+mask_interp = imresize(mask_fov, [newZ, size(mask_fov,2)], 'nearest');
+mask_kid_interp = mask_interp == 1;
+mask_tum_interp = mask_interp == 2;
 
-slice_kid_interp = imresize(Im_Norm,[newZ size(Im_Norm,2)] );
-mask_kid_interp_1 = imresize(mask_fov_all, [newZ size(mask_fov_all,2)], 'nearest');
-im_vol_interp = imresize3(Im_Norm3 , [newZ, size(Im_Norm3, 2), size(Im_Norm3, 3)], 'nearest');
-
-ny3 = size(im_vol_interp, 3);
-midY3 = round(ny3 / 2);
-
-im_vol_r = im_vol_interp(:, :, 50:midY3);
-im_vol_l = im_vol_interp(:, :, midY3+1:end-50);
-
-% Aufteilung der Maske nach Labels
-mask_kid_interp = mask_kid_interp_1 == 1; % Niere
-mask_kid_tumor_interp = mask_kid_interp_1 == 2; % Tumor
-
-% Linke und rechte Bildhälfte Y-Dimension in der Mitte splitten (ungefähr Wirbelsäule)
+% Rechte und linke Hälften
 ny = size(slice_kid_interp, 2);
 midY = round(ny / 2);
+pad = 50;
+slice_kid_r = slice_kid_interp(:, pad:midY);
+slice_kid_l = slice_kid_interp(:, midY+1:end-pad);
+mask_kid_r  = mask_kid_interp(:, pad:midY);
+mask_kid_l  = mask_kid_interp(:, midY+1:end-pad);
+mask_tum_r  = mask_tum_interp(:, pad:midY);
+mask_tum_l  = mask_tum_interp(:, midY+1:end-pad);
 
-slice_kid_r = slice_kid_interp(:,50:midY);
-mask_kid_r = mask_kid_interp(:,50:midY);
-mask_kid_tumor_r  = mask_kid_tumor_interp(:, 50:midY);
+%% 3. Interpolation und FOV des gesamten Volumen für 3D Segmentierung
 
-slice_kid_l = slice_kid_interp(:, midY+1:end-50);
-mask_kid_l  = mask_kid_interp(:, midY+1:end-50);
-mask_kid_tumor_l  = mask_kid_tumor_interp(:, midY+1:end-50);
+% FOV in 3D extrahieren
+im_vol_fov = im_vol(z_fov, :, :);
+mask_kid_3D = mask_kidney(z_fov,:,:);
+mask_kid_interp_3D = imresize3(rescale(im_vol_fov), [newZ, size(im_vol_fov, 2), size(im_vol_fov, 3)]);
+mask_kid_3D_interp = imresize3(mask_kid_3D, size(mask_kid_interp_3D), 'nearest');
 
-%% 3. Selbe Vorverarbeitung für den Slice mit dem größtem Tumorquerschnitt
-% evtl. in Funktion Auslagern
-% Slice mit größter Tumorfläche suchen
-[~, x_slice_tumor] = max(squeeze(sum(sum(mask_vol == 2, 1), 3)));
+% Rechte/linke Seite (Y-Achse splitten)
+ny3 = size(mask_kid_interp_3D, 3);
+midY3 = round(ny3 / 2);
 
+%% 4. Tumorschnitt mit größtem Querschnitt interpolieren
+
+[~, x_slice_tumor] = max(squeeze(sum(sum(mask_tumor, 1), 3)));
 slice_tum = squeeze(im_vol(:, x_slice_tumor, :));
-mask_tum = squeeze(mask_vol(:, x_slice_tumor, :));
-slice_tum_fov = slice_tum(z_start:z_end, :);
-mask_tum_fov = mask_tum(z_start:z_end, :);
-mn_tum = min(slice_tum_fov, [], 'all');
-mx_tum = max(slice_tum_fov, [], 'all');
-Im_tum_norm = (slice_tum_fov - mn_tum) ./ (mx_tum - mn_tum);
-newZ_tum = round(size(Im_tum_norm,1) * scaling);
-slice_tum_tumor_interp = imresize(Im_tum_norm, [newZ_tum size(Im_tum_norm,2)]);
-mask_tum_tumor_interp = imresize(mask_tum_fov == 2, [newZ_tum size(mask_tum_fov,2)], 'nearest');
+mask_tum  = squeeze(mask_vol(:, x_slice_tumor, :) == 2);
+slice_tum_fov = slice_tum(z_fov, :);
+mask_tum_fov = mask_tum(z_fov, :);
 
-% Aufteilung Tumorbild in links/rechts
+% Normalisieren & interpolieren
+Im_tum_norm = rescale(slice_tum_fov);
+slice_tum_tumor_interp = imresize(Im_tum_norm, [newZ, size(Im_tum_norm,2)]);
+mask_tum_tumor_interp  = imresize(mask_tum_fov, [newZ, size(mask_tum_fov,2)], 'nearest');
 nz_tum = size(slice_tum_tumor_interp, 2);
 midZ_tum = round(nz_tum / 2);
 
-%% 4. Daten als Struktur speichern
-data = struct();
-data.midZ = midZ_tum;
+%% 5. Speichern in Datenstruktur
+
 data.tbl = tbl;
 data.row = row;
 data.pixX = pixX;
 data.pixY = pixY;
 data.pixZ = pixZ;
 data.location_str = location_str;
-data.im_vol_l = im_vol_l;
-data.im_vol_r = im_vol_r;
-
-% maximaler Nierenschnitt
-data.slice_kid_interp = slice_kid_interp;
-data.mask_kid_interp = mask_kid_interp;
-data.slice_kid_l = slice_kid_l;
-data.mask_kid_l = mask_kid_l;
-data.slice_kid_r = slice_kid_r;
-data.mask_kid_r = mask_kid_r;
 data.x_slice_kidney = x_slice_kidney;
-data.mask_kid_tumor_interp = mask_kid_tumor_interp;
-data.mask_kid_tumor_l = mask_kid_tumor_l;
-data.mask_kid_tumor_r = mask_kid_tumor_r;
-
-% maximaler Tumorschnitt
 data.x_slice_tumor = x_slice_tumor;
-data.slice_tum_tumor_interp = slice_tum_tumor_interp;
-data.mask_tum_tumor_interp = mask_tum_tumor_interp;
-data.slice_tum_l = slice_tum_tumor_interp(:, midZ_tum+1:end);
-data.mask_tum_l = mask_tum_tumor_interp(:, midZ_tum+1:end);
-data.slice_tum_r = slice_tum_tumor_interp(:, 1:midZ_tum);
-data.mask_tum_r = mask_tum_tumor_interp(:, 1:midZ_tum);
+data.midZ = midZ_tum;
 
-% Referenzformen (für find_object Funktion)
+% Referenzformen: 
 data.circle = circle;
 data.oval = oval;
 data.kidney = kidney;
 data.kidney_mod = kidney_mod;
 data.oval_half = oval_half;
 data.circle_half = circle_half;
+
+% FOV - Maximaler Nierenschnitt
+data.slice_kid_interp = slice_kid_interp;
+data.mask_kid_interp = mask_kid_interp;
+data.slice_kid_l = slice_kid_l;
+data.slice_kid_r = slice_kid_r;
+data.mask_kid_l = mask_kid_l;
+data.mask_kid_r = mask_kid_r;
+data.mask_kid_tumor_interp = mask_tum_interp;
+data.mask_kid_tumor_l = mask_tum_l;
+data.mask_kid_tumor_r = mask_tum_r;
+
+% FOV - alle X-Schichten 
+data.im_vol_r = mask_kid_interp_3D(:, :, 50:midY3);
+data.im_vol_l = mask_kid_interp_3D(:, :, midY3+1:end-50);
+data.seg_vol_r = mask_kid_3D_interp(:, :, 50:midY3);
+data.seg_vol_l = mask_kid_3D_interp(:, :, midY3+1:end-50);
+
+% Tumorschnitt (links/rechts)
+data.slice_tum_tumor_interp = slice_tum_tumor_interp;
+data.mask_tum_tumor_interp = mask_tum_tumor_interp;
+data.slice_tum_l = slice_tum_tumor_interp(:, midZ_tum+1:end);
+data.slice_tum_r = slice_tum_tumor_interp(:, 1:midZ_tum);
+data.mask_tum_l = mask_tum_tumor_interp(:, midZ_tum+1:end);
+data.mask_tum_r = mask_tum_tumor_interp(:, 1:midZ_tum);
+
 
 end

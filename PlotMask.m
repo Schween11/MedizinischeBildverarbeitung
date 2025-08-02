@@ -1,4 +1,23 @@
-function data = PlotMask(case_id);
+function PlotMask(case_id);
+%{
+
+BESCHREIBUNG:
+Darstellung des koronalen Schnitts des Slices NiereMax aus der
+Patiententabelle. Überlagert mit einer semitransparenten Maske der Niere in
+Rot und des Tumors in grün.
+Zusätzlich eine Darstellung des koronalen Schnitts mit dem maximalen
+Tumorquerschnitts und Überlagerung der Tumormaske in grün.
+
+INPUT: 
+Fallnummer (case_id) als Zahl (z.B 3, 62, 141)
+
+OUTPUT:
+%  - Interpolierter koronaler Schnitt im Slice NiereMax,
+%  - mit Nierenmaske (rot) und Tumormaske (grün).
+%  - Linke Bildhälfte desselben Schnitts mit zugehörigen Masken.
+%  - Rechte Bildhälfte desselben Schnitts mit zugehörigen Masken.
+%  - Separater Schnitt mit maximalem Tumorquerschnitt, ebenfalls mit der Tumormaske überlagert.
+%}
 
 %% Aufrufen der vorverarbeiteten Daten im Struct
 data = loadCaseData_i(case_id); 

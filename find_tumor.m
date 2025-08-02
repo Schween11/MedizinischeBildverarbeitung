@@ -1,6 +1,7 @@
 function [target_marked,reference_marked,YBest,XBest,ang,scale,score,acc]= find_tumor(target, reference);
 
-% adaptierte Funktion zur Anwendung der GHT für Tumorerkennung
+% BESCHREIBUNG: leicht adaptierte Version der find_object Funktion zur
+% Tumorlokalisation
 
 % --- Initialization ------------------------------------------------------
 lowest_score = 0; % define lowest score
