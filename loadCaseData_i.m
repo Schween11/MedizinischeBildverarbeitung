@@ -59,11 +59,15 @@ mask_cor_all  = squeeze(mask_vol(:, x_slice_kidney, :));
 z_fov = z_start:z_end;
 im_fov = slice_cor_all(z_fov, :);
 mask_fov_all = mask_cor_all(z_fov, :);
+im_vol_fov = im_vol(z_fov, :, :);
 
 % Werte normalisieren auf [0,1]
 mn = min(im_fov, [], 'all');
 mx = max(im_fov, [], 'all');
 Im_Norm = (im_fov- mn) ./ (mx - mn);
+mn3 = min(im_vol_fov, [], 'all');
+mx3 = max(im_vol_fov, [], 'all');
+Im_Norm3 = (im_vol_fov- mn3) ./ (mx3 - mn3);
 
 % Auf 1mm-Z-Abstand interpolieren
 targetZ = 1; % 1mm Pixelabstand als Ziel
@@ -72,22 +76,29 @@ newZ   = round(size(Im_Norm,1) * scaling);
 
 slice_kid_interp = imresize(Im_Norm,[newZ size(Im_Norm,2)] );
 mask_kid_interp_1 = imresize(mask_fov_all, [newZ size(mask_fov_all,2)], 'nearest');
+im_vol_interp = imresize3(Im_Norm3 , [newZ, size(Im_Norm3, 2), size(Im_Norm3, 3)], 'nearest');
+
+ny3 = size(im_vol_interp, 3);
+midY3 = round(ny3 / 2);
+
+im_vol_r = im_vol_interp(:, :, 50:midY3);
+im_vol_l = im_vol_interp(:, :, midY3+1:end-50);
 
 % Aufteilung der Maske nach Labels
 mask_kid_interp = mask_kid_interp_1 == 1; % Niere
 mask_kid_tumor_interp = mask_kid_interp_1 == 2; % Tumor
 
 % Linke und rechte Bildhälfte Y-Dimension in der Mitte splitten (ungefähr Wirbelsäule)
-nz = size(slice_kid_interp, 2);
-midZ = round(nz / 2);
+ny = size(slice_kid_interp, 2);
+midY = round(ny / 2);
 
-slice_kid_r = slice_kid_interp(:,50:midZ);
-mask_kid_r = mask_kid_interp(:,50:midZ);
-mask_kid_tumor_r  = mask_kid_tumor_interp(:, 50:midZ);
+slice_kid_r = slice_kid_interp(:,50:midY);
+mask_kid_r = mask_kid_interp(:,50:midY);
+mask_kid_tumor_r  = mask_kid_tumor_interp(:, 50:midY);
 
-slice_kid_l = slice_kid_interp(:, midZ+1:end-50);
-mask_kid_l  = mask_kid_interp(:, midZ+1:end-50);
-mask_kid_tumor_l  = mask_kid_tumor_interp(:, midZ+1:end-50);
+slice_kid_l = slice_kid_interp(:, midY+1:end-50);
+mask_kid_l  = mask_kid_interp(:, midY+1:end-50);
+mask_kid_tumor_l  = mask_kid_tumor_interp(:, midY+1:end-50);
 
 %% 3. Selbe Vorverarbeitung für den Slice mit dem größtem Tumorquerschnitt
 % evtl. in Funktion Auslagern
@@ -110,7 +121,6 @@ nz_tum = size(slice_tum_tumor_interp, 2);
 midZ_tum = round(nz_tum / 2);
 
 %% 4. Daten als Struktur speichern
-data.x_slice_kidney = x_slice_kidney;
 data = struct();
 data.midZ = midZ_tum;
 data.tbl = tbl;
@@ -119,6 +129,8 @@ data.pixX = pixX;
 data.pixY = pixY;
 data.pixZ = pixZ;
 data.location_str = location_str;
+data.im_vol_l = im_vol_l;
+data.im_vol_r = im_vol_r;
 
 % maximaler Nierenschnitt
 data.slice_kid_interp = slice_kid_interp;
