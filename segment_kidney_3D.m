@@ -52,9 +52,10 @@ z_max = slice_number + 100;
 % Anzahl Slices mit erlaubtem Wachstum: wichtig um ROI später einzugrenzen
 N_free_growth = 10;
 
-% ==============================
+
+
 % Nach oben propagieren
-% ==============================
+
 for z = slice_number+1:min(nSlices, z_max)
     prev_mask = mask_kidney_3D(:,:,z-1);
     if nnz(prev_mask) == 0, break; end
@@ -62,7 +63,7 @@ for z = slice_number+1:min(nSlices, z_max)
     im = vol_kidney(:,:,z);
     mask_new = activecontour(im, prev_mask, opts.chanvese_iters_kidney, 'Chan-Vese');
 
-    % Neue dynamische ROI vorschlagen
+    % Dynamische ROI 
     stats = regionprops(prev_mask, 'BoundingBox');
     if isempty(stats), break; end
     bb_new = stats(1).BoundingBox;
@@ -72,7 +73,6 @@ for z = slice_number+1:min(nSlices, z_max)
     y2_new = min(H, round(bb_new(2) + bb_new(4)) + 10);
 
     if z - slice_number <= N_free_growth
-        % ROI darf frei angepasst werden
         x1_roi = x1_new; y1_roi = y1_new;
         x2_roi = x2_new; y2_roi = y2_new;
     else
@@ -99,9 +99,9 @@ for z = slice_number+1:min(nSlices, z_max)
     mask_kidney_3D(:,:,z) = mask_new;
 end
 
-% ==============================
-% Nach unten propagieren --> analog
-% ==============================
+
+% Nach unten propagieren --> wie oben
+
 % Reset ROI
 x1_roi = max(1, round(bb(1)) - 10);
 y1_roi = max(1, round(bb(2)) - 10);

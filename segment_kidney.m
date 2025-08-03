@@ -48,7 +48,7 @@ C0 = [c_vals(:), linspace(0, max(F2), K)'];
 % KMeans für Niere 
 [idx_k, C_k] = kmeans(features_kidney, opts.k_kidney, 'Start', C0, 'Replicates', 1);
 
-% GHT-Seed-Zentrum (Grauwert + Grad) extrahieren
+% GHT-Zentrum (Grauwert + Grad) extrahieren
 xg = round(XBest); yg = round(YBest);
 gv_ght = double(im_roi(yg, xg));
 gm_ght = grad_mag(yg, xg);
@@ -77,8 +77,8 @@ kmeans_mask_kidney(roi_mask) = idx_k == chosen_cluster_kidney;
 mask_tmp = imclose(kmeans_mask_kidney, strel('disk', 1));       % Lücken schließen
 mask_tmp = bwareaopen(mask_tmp, 100);
 
-start_mask_kidney = bwareafilt(mask_tmp, 1);                           % Löcher füllen
-start_mask_kidney = imfill(start_mask_kidney, 'holes');
+start_mask_kidney = bwareafilt(mask_tmp, 1);                           
+start_mask_kidney = imfill(start_mask_kidney, 'holes'); % Löcher füllen
 
 %% Chan-Vese Niere
 mask_kidney = activecontour(im_norm, start_mask_kidney, opts.chanvese_iters_kidney, 'Chan-Vese');

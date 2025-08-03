@@ -36,25 +36,22 @@ BESCHREIBUNG: Führt vollständige Nierensegmentierung mit GHT, KMeans und Chan-
     [~, ~, YBest_c, XBest_c, ~, ~, score_c]   = find_object(target, reference_circle);
 
     %% Beste Detektion wählen
-    if ismember(case_id, [116, 146])
-        Xbest = XBest_k; Ybest = YBest_k;
-        score_best = score_k;
-    else
-        [scores, labels] = maxk([score_k, score_km, score_o, score_c], 1);
-        best_label = labels(1);
-        score_best = scores(1);
 
-        switch best_label
-            case 1
-                Xbest = XBest_k; Ybest = YBest_k;
-            case 2
-                Xbest = XBest_km; Ybest = YBest_km;
-            case 3
-                Xbest = XBest_o; Ybest = YBest_o;
-            case 4
-                Xbest = XBest_c; Ybest = YBest_c;
-        end
+    [scores, labels] = maxk([score_k, score_km, score_o, score_c], 1);
+    best_label = labels(1);
+    score_best = scores(1);
+
+    switch best_label
+        case 1
+            Xbest = XBest_k; Ybest = YBest_k;
+        case 2
+            Xbest = XBest_km; Ybest = YBest_km;
+        case 3
+            Xbest = XBest_o; Ybest = YBest_o;
+        case 4
+            Xbest = XBest_c; Ybest = YBest_c;
     end
+    
 
     %% Segmentierungsparameter
     scale_best = 1.15;

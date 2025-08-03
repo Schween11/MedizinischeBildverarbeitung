@@ -13,23 +13,23 @@ function BoxPlotAndVolume(side)
 % OUTPUT:
 % BoxPlot aller gültigen Fälle und das Volumen
 
-% === Excel einlesen ===
+%  Excel einlesen 
 patients = readtable('patients_25.xlsx', 'VariableNamingRule', 'preserve');
 valid_rows = strcmp(patients{:,8}, 'Y');
 case_ids = patients{valid_rows, 1};
 num_cases = numel(case_ids);
 
-% === Ergebnis-Vektoren initialisieren ===
+%  Ergebnis-Vektoren initialisieren 
 dice_side = nan(num_cases, 1);
 case_id_valid = nan(num_cases, 1);
 vol_GT_all = nan(num_cases, 1);      % in ml
 vol_seg_all = nan(num_cases, 1);     % in ml
 num_failed = 0;
 
-% === Dice-Koeffizient-Funktion ===
+% Dice-Koeffizient-Funktion 
 compute_dice = @(A,B) 2 * nnz(A & B) / (nnz(A) + nnz(B));
 
-% === Hauptschleife über alle validen Fälle ===
+% Hauptschleife über alle validen Fälle
 for idx = 1:num_cases
     case_id = case_ids(idx);
 
@@ -59,7 +59,7 @@ for idx = 1:num_cases
             case_id, dice, vol_GT_all(idx), vol_seg_all(idx));
 
     catch ME
-        fprintf("⚠️ Fehler bei Case %d: %s\n", case_id, ME.message);
+        fprintf("Fehler bei Case %d: %s\n", case_id, ME.message);
         num_failed = num_failed + 1;
         continue
     end
@@ -101,7 +101,7 @@ for i = 1:numel(worst_idx)
 end
 
 % Besten Fall markieren
-text(1.05, dice_side(best_idx), sprintf('%d ⬆️', case_id_valid(best_idx)), ...
+text(1.05, dice_side(best_idx), sprintf('%d', case_id_valid(best_idx)), ...
     'Color', 'g', 'FontWeight', 'bold', 'FontSize', 10);
 
 hold off;
