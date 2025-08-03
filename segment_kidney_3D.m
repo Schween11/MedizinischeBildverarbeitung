@@ -66,10 +66,10 @@ for z = slice_number+1:min(nSlices, z_max)
     stats = regionprops(prev_mask, 'BoundingBox');
     if isempty(stats), break; end
     bb_new = stats(1).BoundingBox;
-    x1_new = max(1, round(bb_new(1)) - 5);
-    y1_new = max(1, round(bb_new(2)) - 5);
-    x2_new = min(W, round(bb_new(1) + bb_new(3)) + 5);
-    y2_new = min(H, round(bb_new(2) + bb_new(4)) + 5);
+    x1_new = max(1, round(bb_new(1)) - 10);
+    y1_new = max(1, round(bb_new(2)) - 10);
+    x2_new = min(W, round(bb_new(1) + bb_new(3)) + 10);
+    y2_new = min(H, round(bb_new(2) + bb_new(4)) + 10);
 
     if z - slice_number <= N_free_growth
         % ROI darf frei angepasst werden
@@ -103,10 +103,10 @@ end
 % Nach unten propagieren --> analog
 % ==============================
 % Reset ROI
-x1_roi = max(1, round(bb(1)) - 5);
-y1_roi = max(1, round(bb(2)) - 5);
-x2_roi = min(W, round(bb(1) + bb(3)) + 5);
-y2_roi = min(H, round(bb(2) + bb(4)) + 5);
+x1_roi = max(1, round(bb(1)) - 10);
+y1_roi = max(1, round(bb(2)) - 10);
+x2_roi = min(W, round(bb(1) + bb(3)) + 10);
+y2_roi = min(H, round(bb(2) + bb(4)) + 10);
 
 for z = slice_number-1:-1:max(1, z_min)
     prev_mask = mask_kidney_3D(:,:,z+1);
@@ -118,10 +118,10 @@ for z = slice_number-1:-1:max(1, z_min)
     stats = regionprops(prev_mask, 'BoundingBox');
     if isempty(stats), break; end
     bb_new = stats(1).BoundingBox;
-    x1_new = max(1, round(bb_new(1)) - 5);
-    y1_new = max(1, round(bb_new(2)) - 5);
-    x2_new = min(W, round(bb_new(1) + bb_new(3)) + 5);
-    y2_new = min(H, round(bb_new(2) + bb_new(4)) + 5);
+    x1_new = max(1, round(bb_new(1)) - 10);
+    y1_new = max(1, round(bb_new(2)) - 10);
+    x2_new = min(W, round(bb_new(1) + bb_new(3)) + 10);
+    y2_new = min(H, round(bb_new(2) + bb_new(4)) + 10);
 
     if slice_number - z <= N_free_growth
         x1_roi = x1_new; y1_roi = y1_new;

@@ -31,7 +31,7 @@ for s = 1:2
 
     % 1.1. Kontrasterhöhung + Glättung
     I_cont = adapthisteq(I_kid, 'NumTiles', [8 8], 'ClipLimit', 0.005);
-    %I_cont2 = imadjust(I_kid, [0.3 0.8]); %alternative Kontrasterhöhung
+    %I_cont2 = imadjust(I_kid, [0.3 0.8]); % alternative Kontrasterhöhung
     I_tum_diff = imdiffusefilt(I_cont, "GradientThreshold", 3, "NumberOfIterations", 3);
 
     % 1.2. Canny-Kanten + kleine Objekte entfernen

@@ -69,18 +69,38 @@ function [mask_kidney_3D, Xbest, Ybest, score_best] = PlotSegmentation3D(case_id
         end
     end
 
-    % === Startslice extrahieren ===
-    im_best = vol_kidney(:, :, slice_number);
+% === Startslice extrahieren ===
+im_best = vol_kidney(:, :, slice_number);
 
-    % === Optionen setzen ===
-    opts.k_kidney = 2;
-    opts.chanvese_iters_kidney = 500;
-    opts.plotAll = doPlot;
-    opts.case_id = case_id;
+% === Optionen setzen ===
+opts.k_kidney = 2;
+opts.chanvese_iters_kidney = 500;
+opts.plotAll = doPlot;
+opts.case_id = case_id;
 
-    % === 3D Segmentierung ausführen ===
-    mask_kidney_3D = segment_kidney_3D(vol_kidney, im_best, slice_number, Ybest, Xbest, reference_oval, scale_best, opts);
+% === 2D-Startsegmentierung (nur zur BoundingBox-Prüfung) ===
+start_mask = segment_kidney(im_best, Ybest, Xbest, reference_oval, scale_best, opts);
 
-    toc;
+% === BoundingBox prüfen ===
+stats = regionprops(start_mask, 'BoundingBox');
+if isempty(stats)
+    error('Keine Segmentierung gefunden – leere Maske.');
 end
 
+bbox = stats(1).BoundingBox;
+bbox_width = bbox(3);
+bbox_height = bbox(4);
+bbox_area = bbox_width * bbox_height;
+max_area = 120*120;
+min_area = 40*40;
+
+if bbox_area > max_area
+    error('Startmaske zu groß – Segmentierung abgebrochen.');
+elseif bbox_area < min_area
+    error('Startmaske zu klein – Segmentierung abgebrochen.');
+end
+
+% === 3D Segmentierung ausführen ===
+mask_kidney_3D = segment_kidney_3D(vol_kidney, im_best, slice_number, Ybest, Xbest, reference_oval, scale_best, opts);
+end
+toc

@@ -3,7 +3,7 @@ function [mask_kidney, Xbest, Ybest, score_best] = PlotSegmentation(case_id, sid
 %{ 
 BESCHREIBUNG: Führt vollständige Nierensegmentierung mit GHT, KMeans und Chan-Vese durch
  INPUT:
-   - case_id : Fallnummer
+   - case_id : Fallnummer als Zahl (z
    - side    : 'l' für linke oder 'r' für rechte Niere
    - doPlot  : true/false – gibt an, ob eine Visualisierung erfolgen soll
 

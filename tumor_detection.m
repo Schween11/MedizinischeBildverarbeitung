@@ -1,3 +1,5 @@
+function = find_tumor(case_id)
+
 % Input: Segmentierungsmaske von PlotSegmentation
 
 BW = mask_kidney;
