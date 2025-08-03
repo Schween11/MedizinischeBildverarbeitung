@@ -3,7 +3,9 @@ function data = loadCaseData_i(case_id)
 
 BESCHREIBUNG:
 Lädt Daten und Segmentierungen und vorverarbeitet diese für eine gegebene Fallnummer
-
+Die Cases müssen alle in einem Ordner der Form "allcasesunzipped" vorliegen.
+Zudem müssen die Referenzformen im Ordner "shapes" und die Excel Tabelle
+der Patientdaten im Ordner sein. 
 INPUT: 
 Fallnummer (case_id) als Zahl (z.B 3, 62, 141)
 

@@ -2,7 +2,8 @@ function [mask_kidney_3D, Xbest, Ybest, score_best] = PlotSegmentation3D(case_id
 
 %{
 
- Führt 3D-Nierensegmentierung durch auf Basis GHT + Chan-Vese + Slice Propagation
+ Führt 3D-Nierensegmentierung durch auf Basis GHT + Chan-Vese + Iteration
+ durch die Schichten
 
  INPUT:
    - case_id : Fall-ID
@@ -102,5 +103,5 @@ end
 
 % === 3D Segmentierung ausführen ===
 mask_kidney_3D = segment_kidney_3D(vol_kidney, im_best, slice_number, Ybest, Xbest, reference_oval, scale_best, opts);
-end
 toc
+end
